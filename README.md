@@ -1,1 +1,527 @@
-# vg-site
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VIOX — Solo Game Developer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050505;
+    --bg2: #0a0a0f;
+    --primary: #a855f7;     
+    --secondary: #d946ef;   
+    --red: #ff3333;         
+    --text: #ffffff;
+    --muted: #888899;
+    --border: rgba(168, 85, 247, 0.2);
+    --font-head: 'Orbitron', sans-serif;
+    --font-body: 'Rajdhani', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: var(--bg); color: var(--text); overflow-x: hidden; font-family: var(--font-body); }
+  body { cursor: none; -webkit-font-smoothing: antialiased; }
+  a { text-decoration: none; color: inherit; cursor: none; }
+  button { cursor: none; }
+
+  ::selection { background: var(--primary); color: #fff; }
+
+  /* ═══════════════ PRELOADER ═══════════════ */
+  #preloader {
+    position: fixed; inset: 0; background: var(--bg); z-index: 10000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transition: opacity 0.8s ease;
+  }
+  .loader-text {
+    font-family: var(--font-head); font-size: 24px; font-weight: 700; letter-spacing: 0.2em;
+    color: var(--primary); text-shadow: 0 0 20px var(--primary); margin-bottom: 20px;
+  }
+  .loader-bar {
+    width: 200px; height: 2px; background: rgba(255,255,255,0.1); position: relative; overflow: hidden;
+  }
+  .loader-bar::after {
+    content: ''; position: absolute; top: 0; left: 0; height: 100%; width: 0%;
+    background: var(--primary); box-shadow: 0 0 10px var(--primary);
+    animation: load 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+  @keyframes load { to { width: 100%; } }
+
+  /* ═══════════════ CUSTOM CURSOR ═══════════════ */
+  .cursor-dot, .cursor-ring {
+    position: fixed; top: 0; left: 0; pointer-events: none; z-index: 9999;
+    border-radius: 50%; transform: translate(-50%, -50%);
+  }
+  .cursor-dot { width: 6px; height: 6px; background: var(--secondary); box-shadow: 0 0 10px var(--secondary); }
+  .cursor-ring {
+    width: 36px; height: 36px; border: 1px solid var(--primary);
+    transition: width 0.3s, height 0.3s, background 0.3s;
+  }
+  .cursor-ring.hover { width: 64px; height: 64px; background: rgba(168, 85, 247, 0.15); }
+  @media (pointer: coarse) { body { cursor: auto; } a, button { cursor: pointer; } .cursor-dot, .cursor-ring { display: none; } }
+
+  /* ═══════════════ BACKGROUND ═══════════════ */
+  #webgl-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+  .grid-overlay {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 50px 50px;
+    mask-image: radial-gradient(circle at center, black 30%, transparent 80%);
+    -webkit-mask-image: radial-gradient(circle at center, black 30%, transparent 80%);
+    opacity: 0.3;
+  }
+  .noise {
+    position: fixed; inset: 0; z-index: 2; pointer-events: none; opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ═══════════════ NAV ═══════════════ */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 24px 50px; display: flex; justify-content: space-between; align-items: center;
+    background: linear-gradient(to bottom, rgba(5,5,5,0.9), transparent);
+  }
+  .logo {
+    font-family: var(--font-head); font-weight: 900; font-size: 24px; letter-spacing: 0.1em;
+    color: #fff; display: flex; align-items: center; gap: 10px;
+  }
+  .logo span { color: var(--primary); text-shadow: 0 0 15px var(--primary); }
+  .nav-links { display: flex; gap: 40px; align-items: center; }
+  .nav-links a {
+    font-family: var(--font-head); font-size: 12px; font-weight: 700; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--muted); transition: color 0.3s, text-shadow 0.3s;
+  }
+  .nav-links a:hover { color: var(--primary); text-shadow: 0 0 10px var(--primary); }
+
+  /* ═══════════════ MAIN LAYOUT ═══════════════ */
+  main { position: relative; z-index: 10; }
+  section { position: relative; }
+  .container { max-width: 1300px; margin: 0 auto; padding: 0 40px; }
+
+  /* ═══════════════ HERO ═══════════════ */
+  .hero {
+    min-height: 100vh; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 50px; gap: 40px;
+  }
+  .hero-content { max-width: 650px; }
+  .hero-tag {
+    display: inline-block; font-family: var(--font-head); font-size: 12px; font-weight: 700;
+    color: var(--secondary); border: 1px solid var(--secondary); padding: 6px 14px;
+    border-radius: 4px; margin-bottom: 30px; letter-spacing: 0.2em;
+    box-shadow: 0 0 15px rgba(217, 70, 239, 0.2) inset;
+    text-shadow: 0 0 10px var(--secondary);
+  }
+  .hero h1 {
+    font-family: var(--font-head); font-size: clamp(48px, 7vw, 90px); font-weight: 900;
+    line-height: 1.05; letter-spacing: -0.02em; margin-bottom: 24px;
+    text-transform: uppercase;
+  }
+  .hero h1 span {
+    color: transparent; -webkit-text-stroke: 1px var(--text);
+  }
+  .hero h1 .glitch { color: var(--primary); text-shadow: 0 0 30px var(--primary); -webkit-text-stroke: 0; }
+  .hero p {
+    font-size: 20px; color: var(--muted); line-height: 1.6; margin-bottom: 40px; max-width: 500px;
+  }
+  
+  .hero-btns { display: flex; gap: 20px; flex-wrap: wrap; }
+
+  .btn-primary {
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    background: transparent; color: var(--text); border: 1px solid var(--primary);
+    padding: 16px 36px; font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    letter-spacing: 0.15em; text-transform: uppercase; position: relative; overflow: hidden;
+    transition: all 0.4s ease; border-radius: 4px; min-width: 220px;
+  }
+  .btn-primary::before {
+    content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+    background: var(--primary); transition: all 0.4s ease; z-index: -1;
+  }
+  .btn-primary:hover { box-shadow: 0 0 20px var(--primary); border-color: var(--primary); }
+  .btn-primary:hover::before { left: 0; }
+
+  .btn-steam {
+    border-color: #66c0f4; color: #66c0f4;
+  }
+  .btn-steam::before { background: #66c0f4; }
+  .btn-steam:hover { box-shadow: 0 0 20px #66c0f4; border-color: #66c0f4; color: #000; }
+
+  /* AVATAR CONTAINER */
+  .hero-avatar {
+    position: relative; width: 450px; height: 450px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .hero-avatar::before {
+    content: ''; position: absolute; inset: 10%; border-radius: 50%;
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.4) 0%, transparent 60%);
+    filter: blur(40px); animation: pulse 4s infinite alternate; z-index: 1;
+  }
+  @keyframes pulse { from { transform: scale(0.8); opacity: 0.5; } to { transform: scale(1.1); opacity: 1; } }
+  
+  .hero-avatar img {
+    width: 100%; height: 100%; object-fit: contain; position: relative; z-index: 2;
+    mix-blend-mode: screen; 
+    filter: drop-shadow(0 0 30px rgba(168, 85, 247, 0.6));
+    animation: float 6s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(2deg); }
+  }
+  .avatar-ring {
+    position: absolute; inset: 0; border: 1px dashed var(--secondary); border-radius: 50%;
+    animation: rotate 20s linear infinite; opacity: 0.3; z-index: 0;
+  }
+  .avatar-ring:nth-child(2) { inset: -20px; border-color: var(--primary); animation-direction: reverse; animation-duration: 30s; }
+  @keyframes rotate { to { transform: rotate(360deg); } }
+
+  /* ═══════════════ GAME SHOWCASE ═══════════════ */
+  .games { padding: 120px 0; }
+  .section-header { margin-bottom: 60px; text-align: center; }
+  .section-title {
+    font-family: var(--font-head); font-size: clamp(32px, 5vw, 56px); font-weight: 900;
+    letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 16px;
+  }
+  .section-title span { color: var(--primary); text-shadow: 0 0 20px var(--primary); }
+  .section-sub { color: var(--muted); font-size: 18px; }
+
+  .game-showcase {
+    background: linear-gradient(135deg, rgba(15,15,20,0.95), rgba(5,5,10,0.95));
+    border: 1px solid rgba(255, 51, 51, 0.3);
+    border-radius: 20px; overflow: hidden; position: relative;
+    display: flex; flex-direction: row; min-height: 500px;
+    transform-style: preserve-3d; transition: border-color 0.3s, box-shadow 0.3s;
+    box-shadow: 0 0 50px rgba(0,0,0,0.8);
+  }
+  .game-showcase:hover {
+    border-color: var(--red);
+    box-shadow: 0 0 60px rgba(255, 51, 51, 0.2);
+  }
+  
+  .game-visual {
+    flex: 1; position: relative;
+    background: linear-gradient(45deg, #1a0505, #4a0a0a);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .game-visual::before {
+    content: ''; position: absolute; inset: 0;
+    background: 
+      radial-gradient(circle at 20% 80%, rgba(255, 51, 51, 0.2) 0%, transparent 50%),
+      repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,0,0,0.03) 40px, rgba(255,0,0,0.03) 41px);
+  }
+  .game-visual::after {
+    content: ''; position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.15; mix-blend-mode: overlay;
+  }
+
+  .release-badge {
+    position: absolute; top: 30px; left: 30px; z-index: 5;
+    background: rgba(0,0,0,0.7); border: 1px solid var(--red);
+    padding: 10px 20px; border-radius: 8px;
+    font-family: var(--font-head); font-size: 16px; font-weight: 700; letter-spacing: 0.1em;
+    color: var(--red); text-shadow: 0 0 10px var(--red);
+    box-shadow: 0 0 20px rgba(255, 51, 51, 0.3);
+    backdrop-filter: blur(5px);
+  }
+
+  .game-visual-text {
+    font-family: var(--font-head); font-size: 80px; font-weight: 900;
+    color: rgba(255,255,255,0.05); z-index: 2; letter-spacing: 0.1em;
+    transform: rotate(-10deg);
+  }
+
+  .game-details {
+    flex: 1; padding: 60px; position: relative; z-index: 2;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  
+  .game-genre {
+    font-family: var(--font-head); font-size: 12px; font-weight: 700; letter-spacing: 0.15em;
+    color: var(--red); margin-bottom: 15px; text-transform: uppercase;
+  }
+  
+  .game-title {
+    font-family: var(--font-head); font-size: clamp(40px, 5vw, 64px); font-weight: 900;
+    line-height: 1; margin-bottom: 20px; text-transform: uppercase;
+    color: #fff; text-shadow: 0 0 20px rgba(255, 51, 51, 0.5);
+  }
+  
+  .game-desc {
+    color: var(--muted); font-size: 18px; line-height: 1.6; margin-bottom: 40px;
+  }
+
+  .game-features { display: flex; gap: 20px; flex-wrap: wrap; }
+  .game-features span {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    padding: 6px 12px; border-radius: 4px; font-size: 14px; color: #ccc;
+  }
+
+  /* ═══════════════ FOOTER ═══════════════ */
+  footer {
+    border-top: 1px solid var(--border); padding: 60px 50px; display: flex;
+    justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;
+    background: var(--bg2);
+  }
+  .footer-logo { font-family: var(--font-head); font-weight: 900; font-size: 24px; }
+  .footer-logo span { color: var(--primary); }
+  .footer-socials { display: flex; gap: 30px; }
+  .footer-socials a {
+    font-family: var(--font-head); font-size: 12px; font-weight: 700; color: var(--muted);
+    transition: color 0.3s, text-shadow 0.3s; letter-spacing: 0.1em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .footer-socials a:hover { color: var(--secondary); text-shadow: 0 0 10px var(--secondary); }
+
+  @media (max-width: 900px) {
+    nav { padding: 20px; }
+    .nav-links { display: none; } 
+    .hero { flex-direction: column-reverse; justify-content: center; padding: 120px 20px 60px; text-align: center; }
+    .hero p { margin: 0 auto 40px; }
+    .hero-btns { justify-content: center; }
+    .hero-avatar { width: 320px; height: 320px; }
+    
+    .game-showcase { flex-direction: column; }
+    .game-visual { min-height: 300px; }
+    .game-details { padding: 40px 20px; text-align: center; }
+    .game-features { justify-content: center; }
+    
+    footer { flex-direction: column; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PRELOADER -->
+<div id="preloader">
+  <div class="loader-text">SYSTEM BOOT</div>
+  <div class="loader-bar"></div>
+</div>
+
+<!-- CURSOR -->
+<div class="cursor-dot"></div>
+<div class="cursor-ring"></div>
+
+<!-- BACKGROUND -->
+<canvas id="webgl-bg"></canvas>
+<div class="grid-overlay"></div>
+<div class="noise"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">VIOX<span>.</span>GAMES</div>
+  <div class="nav-links">
+    <a href="#games">Проект</a>
+    <a href="https://steamcommunity.com/profiles/76561199467946325/" target="_blank">Steam</a>
+  </div>
+</nav>
+
+<main>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-tag">SOLO UNITY DEVELOPER</div>
+      <h1>ДЕЛАЮ <br><span class="glitch">ИГРЫ</span> <br><span>С ДУШОЙ</span></h1>
+      <p>Привет, я VIOX. Я делаю игры на Unity.</p>
+      
+      <div class="hero-btns">
+        <a href="#games" class="btn-primary magnetic">Смотреть проект <span>↓</span></a>
+        <a href="https://steamcommunity.com/profiles/76561199467946325/" target="_blank" class="btn-primary btn-steam magnetic">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="margin-bottom: 2px;">
+            <path d="M12 0C5.373 0 0 5.373 0 12c0 5.274 3.392 9.748 8.153 11.336l3.652-8.894a5.352 5.352 0 0 1-2.815-4.731c0-2.96 2.4-5.36 5.36-5.36 2.96 0 5.36 2.4 5.36 5.36 0 2.532-1.755 4.654-4.12 5.225L12.008 24C18.17 23.86 24 18.79 24 12c0-6.627-5.373-12-12-12zm-2.847 15.396l-1.352 3.293C6.283 17.547 5.28 15.806 5.28 13.84c0-1.955.98-3.683 2.482-4.726L7.11 6.666C4.278 7.86 2.4 10.586 2.4 13.84c0 4.05 2.66 7.485 6.358 8.648l-.32.78c-.15.368-.562.54-.935.39l-2.51-1.02c-.372-.152-.547-.56-.395-.93l.32-.78A8.972 8.972 0 0 1 3 12c0-4.968 4.032-9 9-9s9 4.032 9 9c0 4.866-3.86 8.832-8.702 8.995l-3.145-7.599zM13 7.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
+          </svg>
+          Steam Профиль
+        </a>
+      </div>
+    </div>
+    
+    <div class="hero-avatar">
+      <div class="avatar-ring"></div>
+      <div class="avatar-ring"></div>
+      <img src="viox-logo.png" id="studio-logo" alt="VIOX Logo" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><rect width=\'100\' height=\'100\' rx=\'20\' fill=\'%23111\'/><text x=\'50\' y=\'60\' font-family=\'sans-serif\' font-size=\'30\' font-weight=\'bold\' fill=\'%23a855f7\' text-anchor=\'middle\'>VIOX</text></svg>'">
+    </div>
+  </section>
+
+  <!-- FLAGSHIP GAME -->
+  <section class="games" id="games">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">МОЙ <span>ПРОЕКТ</span></h2>
+        <p class="section-sub">Главный релиз</p>
+      </div>
+      
+      <div class="game-showcase tilt">
+        
+        <div class="game-visual">
+          <div class="release-badge">РЕЛИЗ: JAN-MAY 2027</div>
+          <div class="game-visual-text">RED<br>FOREST</div>
+        </div>
+
+        <div class="game-details">
+          <div class="game-genre">Survival Horror / Open World</div>
+          <h3 class="game-title">RED FOREST</h3>
+          <p class="game-desc">
+            2D игра про выживание в зомби апокалипсисе
+          </p>
+          
+          <div class="game-features">
+            <span>Хардкорное выживание</span>
+            <span>Открытый мир</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">VIOX<span>.</span>GAMES</div>
+  <div class="footer-socials">
+    <a href="https://steamcommunity.com/profiles/76561199467946325/" target="_blank">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 0C5.373 0 0 5.373 0 12c0 5.274 3.392 9.748 8.153 11.336l3.652-8.894a5.352 5.352 0 0 1-2.815-4.731c0-2.96 2.4-5.36 5.36-5.36 2.96 0 5.36 2.4 5.36 5.36 0 2.532-1.755 4.654-4.12 5.225L12.008 24C18.17 23.86 24 18.79 24 12c0-6.627-5.373-12-12-12zm-2.847 15.396l-1.352 3.293C6.283 17.547 5.28 15.806 5.28 13.84c0-1.955.98-3.683 2.482-4.726L7.11 6.666C4.278 7.86 2.4 10.586 2.4 13.84c0 4.05 2.66 7.485 6.358 8.648l-.32.78c-.15.368-.562.54-.935.39l-2.51-1.02c-.372-.152-.547-.56-.395-.93l.32-.78A8.972 8.972 0 0 1 3 12c0-4.968 4.032-9 9-9s9 4.032 9 9c0 4.866-3.86 8.832-8.702 8.995l-3.145-7.599zM13 7.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
+      </svg>
+      Steam
+    </a>
+  </div>
+  <div style="color: var(--muted); font-size: 14px;">© 2024 VIOX. All rights reserved.</div>
+</footer>
+
+<!-- SCRIPTS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+<script>
+  // ═══════════════ ПРЕЛОАДЕР И АНИМАЦИИ ═══════════════
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      const preloader = document.getElementById('preloader');
+      preloader.style.opacity = '0';
+      setTimeout(() => preloader.style.display = 'none', 800);
+      
+      gsap.from('.hero-content > *', {
+        y: 30, opacity: 0, duration: 1, stagger: 0.1, ease: 'power3.out', delay: 0.5
+      });
+      gsap.from('.hero-avatar', {
+        scale: 0.8, opacity: 0, duration: 1.5, ease: 'power3.out', delay: 0.8
+      });
+    }, 2000);
+  });
+
+  // ═══════════════ КАСТОМНЫЙ КУРСОР ═══════════════
+  const dot = document.querySelector('.cursor-dot');
+  const ring = document.querySelector('.cursor-ring');
+  let mouseX = 0, mouseY = 0, ringX = 0, ringY = 0;
+
+  window.addEventListener('mousemove', (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+    gsap.to(dot, { x: mouseX, y: mouseY, duration: 0.1 });
+  });
+
+  gsap.ticker.add(() => {
+    ringX += (mouseX - ringX) * 0.15;
+    ringY += (mouseY - ringY) * 0.15;
+    gsap.set(ring, { x: ringX, y: ringY });
+  });
+
+  document.querySelectorAll('a, button, .game-showcase').forEach(el => {
+    el.addEventListener('mouseenter', () => ring.classList.add('hover'));
+    el.addEventListener('mouseleave', () => ring.classList.remove('hover'));
+  });
+
+  // ═══════════════ 3D TILT ЭФФЕКТ ═══════════════
+  const cards = document.querySelectorAll('.tilt');
+  cards.forEach(card => {
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      
+      const rotateX = ((y - centerY) / centerY) * -4;
+      const rotateY = ((x - centerX) / centerX) * 4;
+      
+      gsap.to(card, {
+        rotationX: rotateX, rotationY: rotateY, transformPerspective: 1500,
+        duration: 0.4, ease: "power2.out"
+      });
+    });
+    card.addEventListener('mouseleave', () => {
+      gsap.to(card, { rotationX: 0, rotationY: 0, duration: 0.6, ease: "power3.out" });
+    });
+  });
+
+  // ═══════════════ THREE.JS ЗВЕЗДНОЕ ПОЛЕ ═══════════════
+  const canvas = document.getElementById('webgl-bg');
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  const particlesGeometry = new THREE.BufferGeometry();
+  const particlesCount = 1500;
+  const posArray = new Float32Array(particlesCount * 3);
+  const colorsArray = new Float32Array(particlesCount * 3);
+
+  const color1 = new THREE.Color('#a855f7');
+  const color2 = new THREE.Color('#d946ef');
+
+  for(let i = 0; i < particlesCount * 3; i += 3) {
+    posArray[i] = (Math.random() - 0.5) * 100;
+    posArray[i+1] = (Math.random() - 0.5) * 100;
+    posArray[i+2] = (Math.random() - 0.5) * 100;
+    const mixedColor = color1.clone().lerp(color2, Math.random());
+    colorsArray[i] = mixedColor.r;
+    colorsArray[i+1] = mixedColor.g;
+    colorsArray[i+2] = mixedColor.b;
+  }
+
+  particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+  particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorsArray, 3));
+
+  const particlesMaterial = new THREE.PointsMaterial({
+    size: 0.15, vertexColors: true, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending
+  });
+
+  const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+  scene.add(particlesMesh);
+
+  let targetX = 0, targetY = 0;
+  window.addEventListener('mousemove', (e) => {
+    targetX = (e.clientX / window.innerWidth - 0.5) * 2;
+    targetY = (e.clientY / window.innerHeight - 0.5) * 2;
+  });
+
+  const clock = new THREE.Clock();
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const elapsedTime = clock.getElapsedTime();
+
+    particlesMesh.rotation.y = elapsedTime * 0.05;
+    particlesMesh.rotation.x = elapsedTime * 0.02;
+    particlesMesh.rotation.y += (targetX * 0.5 - particlesMesh.rotation.y) * 0.02;
+    particlesMesh.rotation.x += (targetY * 0.5 - particlesMesh.rotation.x) * 0.02;
+    particlesMesh.position.z = Math.sin(elapsedTime * 0.5) * 2;
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+</script>
+</body>
+</html>
