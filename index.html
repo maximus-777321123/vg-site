@@ -11,9 +11,9 @@
   :root {
     --bg: #050505;
     --bg2: #0a0a0f;
-    --primary: #a855f7;     
-    --secondary: #d946ef;   
-    --red: #ff3333;         
+    --primary: #a855f7;
+    --secondary: #d946ef;
+    --red: #ff3333;
     --text: #ffffff;
     --muted: #888899;
     --border: rgba(168, 85, 247, 0.2);
@@ -25,7 +25,7 @@
   html, body { background: var(--bg); color: var(--text); overflow-x: hidden; font-family: var(--font-body); }
   body { cursor: none; -webkit-font-smoothing: antialiased; }
   a { text-decoration: none; color: inherit; cursor: none; }
-  button { cursor: none; }
+  button, input, select, textarea { cursor: none; font-family: var(--font-body); }
 
   ::selection { background: var(--primary); color: #fff; }
 
@@ -60,7 +60,7 @@
     transition: width 0.3s, height 0.3s, background 0.3s;
   }
   .cursor-ring.hover { width: 64px; height: 64px; background: rgba(168, 85, 247, 0.15); }
-  @media (pointer: coarse) { body { cursor: auto; } a, button { cursor: pointer; } .cursor-dot, .cursor-ring { display: none; } }
+  @media (pointer: coarse) { body { cursor: auto; } a, button, input, select, textarea { cursor: pointer; } .cursor-dot, .cursor-ring { display: none; } }
 
   /* ═══════════════ BACKGROUND ═══════════════ */
   #webgl-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
@@ -88,9 +88,9 @@
     color: #fff; display: flex; align-items: center; gap: 10px;
   }
   .logo span { color: var(--primary); text-shadow: 0 0 15px var(--primary); }
-  .nav-links { display: flex; gap: 40px; align-items: center; }
+  .nav-links { display: flex; gap: 30px; align-items: center; }
   .nav-links a {
-    font-family: var(--font-head); font-size: 12px; font-weight: 700; letter-spacing: 0.15em;
+    font-family: var(--font-head); font-size: 11px; font-weight: 700; letter-spacing: 0.15em;
     text-transform: uppercase; color: var(--muted); transition: color 0.3s, text-shadow 0.3s;
   }
   .nav-links a:hover { color: var(--primary); text-shadow: 0 0 10px var(--primary); }
@@ -125,7 +125,7 @@
   .hero p {
     font-size: 20px; color: var(--muted); line-height: 1.6; margin-bottom: 40px; max-width: 500px;
   }
-  
+
   .hero-btns { display: flex; gap: 20px; flex-wrap: wrap; }
 
   .btn-primary {
@@ -142,9 +142,7 @@
   .btn-primary:hover { box-shadow: 0 0 20px var(--primary); border-color: var(--primary); }
   .btn-primary:hover::before { left: 0; }
 
-  .btn-steam {
-    border-color: #66c0f4; color: #66c0f4;
-  }
+  .btn-steam { border-color: #66c0f4; color: #66c0f4; }
   .btn-steam::before { background: #66c0f4; }
   .btn-steam:hover { box-shadow: 0 0 20px #66c0f4; border-color: #66c0f4; color: #000; }
 
@@ -159,10 +157,10 @@
     filter: blur(40px); animation: pulse 4s infinite alternate; z-index: 1;
   }
   @keyframes pulse { from { transform: scale(0.8); opacity: 0.5; } to { transform: scale(1.1); opacity: 1; } }
-  
+
   .hero-avatar img {
     width: 100%; height: 100%; object-fit: contain; position: relative; z-index: 2;
-    mix-blend-mode: screen; 
+    mix-blend-mode: screen;
     filter: drop-shadow(0 0 30px rgba(168, 85, 247, 0.6));
     animation: float 6s ease-in-out infinite;
   }
@@ -177,8 +175,8 @@
   .avatar-ring:nth-child(2) { inset: -20px; border-color: var(--primary); animation-direction: reverse; animation-duration: 30s; }
   @keyframes rotate { to { transform: rotate(360deg); } }
 
-  /* ═══════════════ GAME SHOWCASE ═══════════════ */
-  .games { padding: 120px 0; }
+  /* ═══════════════ SECTION HEADERS ═══════════════ */
+  .games, .extra-section { padding: 120px 0 40px; }
   .section-header { margin-bottom: 60px; text-align: center; }
   .section-title {
     font-family: var(--font-head); font-size: clamp(32px, 5vw, 56px); font-weight: 900;
@@ -187,6 +185,7 @@
   .section-title span { color: var(--primary); text-shadow: 0 0 20px var(--primary); }
   .section-sub { color: var(--muted); font-size: 18px; }
 
+  /* ═══════════════ GAME SHOWCASE ═══════════════ */
   .game-showcase {
     background: linear-gradient(135deg, rgba(15,15,20,0.95), rgba(5,5,10,0.95));
     border: 1px solid rgba(255, 51, 51, 0.3);
@@ -199,7 +198,7 @@
     border-color: var(--red);
     box-shadow: 0 0 60px rgba(255, 51, 51, 0.2);
   }
-  
+
   .game-visual {
     flex: 1; position: relative;
     background: linear-gradient(45deg, #1a0505, #4a0a0a);
@@ -208,7 +207,7 @@
   }
   .game-visual::before {
     content: ''; position: absolute; inset: 0;
-    background: 
+    background:
       radial-gradient(circle at 20% 80%, rgba(255, 51, 51, 0.2) 0%, transparent 50%),
       repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,0,0,0.03) 40px, rgba(255,0,0,0.03) 41px);
   }
@@ -238,18 +237,18 @@
     flex: 1; padding: 60px; position: relative; z-index: 2;
     display: flex; flex-direction: column; justify-content: center;
   }
-  
+
   .game-genre {
     font-family: var(--font-head); font-size: 12px; font-weight: 700; letter-spacing: 0.15em;
     color: var(--red); margin-bottom: 15px; text-transform: uppercase;
   }
-  
+
   .game-title {
     font-family: var(--font-head); font-size: clamp(40px, 5vw, 64px); font-weight: 900;
     line-height: 1; margin-bottom: 20px; text-transform: uppercase;
     color: #fff; text-shadow: 0 0 20px rgba(255, 51, 51, 0.5);
   }
-  
+
   .game-desc {
     color: var(--muted); font-size: 18px; line-height: 1.6; margin-bottom: 40px;
   }
@@ -259,12 +258,130 @@
     background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
     padding: 6px 12px; border-radius: 4px; font-size: 14px; color: #ccc;
   }
+  .game-features span.highlight {
+    border-color: var(--primary); color: var(--primary);
+    text-shadow: 0 0 10px var(--primary);
+  }
+
+  /* ═══════════════ EXTRA SECTIONS ═══════════════ */
+  .extra-section { padding: 80px 0; }
+  .extra-section .section-header { margin-bottom: 40px; }
+
+  /* Cards (Анонсы) */
+  .cards-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;
+  }
+  .info-card {
+    background: linear-gradient(135deg, rgba(20,20,26,0.95), rgba(10,10,15,0.95));
+    border: 1px solid var(--border); border-radius: 14px; padding: 28px;
+    transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+  }
+  .info-card:hover {
+    transform: translateY(-6px); border-color: var(--primary);
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.15);
+  }
+  .info-card h3 {
+    font-family: var(--font-head); font-size: 18px; font-weight: 700; margin-bottom: 12px;
+    color: #fff; letter-spacing: 0.02em;
+  }
+  .info-card p { color: var(--muted); font-size: 16px; line-height: 1.5; margin-bottom: 14px; }
+  .info-card time {
+    font-family: var(--font-head); font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+    color: var(--secondary); text-shadow: 0 0 8px var(--secondary);
+  }
+
+  /* Релизы */
+  .release-list { list-style: none; display: flex; flex-direction: column; gap: 16px; }
+  .release-item {
+    background: rgba(15,15,20,0.9); border: 1px solid var(--border);
+    border-left: 3px solid var(--red); border-radius: 10px;
+    padding: 20px 26px; display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 10px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .release-item:hover { border-left-color: var(--primary); box-shadow: 0 0 20px rgba(168,85,247,0.1); }
+  .release-item strong { font-family: var(--font-head); font-size: 16px; color: #fff; letter-spacing: 0.02em; }
+  .release-item .date { color: var(--muted); font-size: 15px; }
+  .tag {
+    font-family: var(--font-head); font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+    color: var(--primary); border: 1px solid var(--primary); border-radius: 4px;
+    padding: 4px 10px; text-shadow: 0 0 8px var(--primary);
+  }
+
+  /* Портфолио */
+  .portfolio-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px;
+  }
+  .portfolio-item {
+    position: relative; border-radius: 14px; overflow: hidden;
+    border: 1px solid var(--border); background: #111;
+    aspect-ratio: 16 / 10;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .portfolio-item:hover { border-color: var(--primary); box-shadow: 0 0 30px rgba(168,85,247,0.2); }
+  .portfolio-item img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    transition: transform 0.5s ease; opacity: 0.9;
+  }
+  .portfolio-item:hover img { transform: scale(1.06); }
+  .portfolio-item figcaption {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+    padding: 30px 18px 14px;
+    font-family: var(--font-head); font-size: 13px; font-weight: 700; letter-spacing: 0.05em;
+  }
+  .portfolio-placeholder {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    color: var(--muted); font-family: var(--font-head); font-size: 13px; letter-spacing: 0.1em;
+    background: repeating-linear-gradient(45deg, #111, #111 10px, #151515 10px, #151515 20px);
+  }
+
+  /* Превью сайта */
+  .preview-box {
+    background: linear-gradient(135deg, rgba(20,20,26,0.95), rgba(10,10,15,0.95));
+    border: 1px solid var(--border); border-radius: 16px;
+    padding: 40px; display: flex; align-items: center; justify-content: space-between;
+    gap: 30px; flex-wrap: wrap;
+    position: relative; overflow: hidden;
+  }
+  .preview-box::before {
+    content: ''; position: absolute; top: -50%; right: -10%; width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(168,85,247,0.2), transparent 70%);
+    filter: blur(40px); pointer-events: none;
+  }
+  .preview-box p { color: var(--muted); font-size: 17px; line-height: 1.6; max-width: 600px; }
+  .preview-box h3 {
+    font-family: var(--font-head); font-size: 22px; font-weight: 700; margin-bottom: 10px;
+    color: #fff; position: relative; z-index: 1;
+  }
+  .preview-box .btn-primary { position: relative; z-index: 1; min-width: 200px; }
+
+  /* Предложка — ссылка на MAX */
+  .feedback-link {
+    background: linear-gradient(135deg, rgba(20,20,26,0.95), rgba(10,10,15,0.95));
+    border: 1px solid var(--border); border-radius: 16px;
+    padding: 40px; max-width: 760px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 30px; flex-wrap: wrap;
+    position: relative; overflow: hidden;
+  }
+  .feedback-link::before {
+    content: ''; position: absolute; top: -50%; right: -10%; width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(217,70,239,0.2), transparent 70%);
+    filter: blur(40px); pointer-events: none;
+  }
+  .feedback-link p { color: var(--muted); font-size: 17px; line-height: 1.6; max-width: 480px; }
+  .feedback-link h3 {
+    font-family: var(--font-head); font-size: 22px; font-weight: 700; margin-bottom: 10px;
+    color: #fff; position: relative; z-index: 1;
+  }
+  .feedback-link .btn-primary { position: relative; z-index: 1; min-width: 200px; }
 
   /* ═══════════════ FOOTER ═══════════════ */
   footer {
     border-top: 1px solid var(--border); padding: 60px 50px; display: flex;
     justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;
-    background: var(--bg2);
+    background: var(--bg2); position: relative; z-index: 10;
   }
   .footer-logo { font-family: var(--font-head); font-weight: 900; font-size: 24px; }
   .footer-logo span { color: var(--primary); }
@@ -278,17 +395,20 @@
 
   @media (max-width: 900px) {
     nav { padding: 20px; }
-    .nav-links { display: none; } 
+    .nav-links { display: none; }
     .hero { flex-direction: column-reverse; justify-content: center; padding: 120px 20px 60px; text-align: center; }
     .hero p { margin: 0 auto 40px; }
     .hero-btns { justify-content: center; }
     .hero-avatar { width: 320px; height: 320px; }
-    
+
     .game-showcase { flex-direction: column; }
     .game-visual { min-height: 300px; }
     .game-details { padding: 40px 20px; text-align: center; }
     .game-features { justify-content: center; }
-    
+
+    .preview-box { padding: 30px 22px; text-align: center; justify-content: center; }
+    .feedback-link { padding: 30px 22px; text-align: center; justify-content: center; }
+
     footer { flex-direction: column; text-align: center; }
   }
 </style>
@@ -315,6 +435,11 @@
   <div class="logo">VIOX<span>.</span>GAMES</div>
   <div class="nav-links">
     <a href="#games">Проект</a>
+    <a href="#announcements">Анонсы</a>
+    <a href="#releases">Релизы</a>
+    <a href="#portfolio">Портфолио</a>
+    <a href="#preview">Превью</a>
+    <a href="#feedback">Предложка</a>
     <a href="https://steamcommunity.com/profiles/76561199467946325/" target="_blank">Steam</a>
   </div>
 </nav>
@@ -326,7 +451,7 @@
       <div class="hero-tag">SOLO UNITY DEVELOPER</div>
       <h1>ДЕЛАЮ <br><span class="glitch">ИГРЫ</span> <br><span>С ДУШОЙ</span></h1>
       <p>Привет, я VIOX. Я делаю игры на Unity.</p>
-      
+
       <div class="hero-btns">
         <a href="#games" class="btn-primary magnetic">Смотреть проект <span>↓</span></a>
         <a href="https://steamcommunity.com/profiles/76561199467946325/" target="_blank" class="btn-primary btn-steam magnetic">
@@ -337,7 +462,7 @@
         </a>
       </div>
     </div>
-    
+
     <div class="hero-avatar">
       <div class="avatar-ring"></div>
       <div class="avatar-ring"></div>
@@ -352,9 +477,9 @@
         <h2 class="section-title">МОЙ <span>ПРОЕКТ</span></h2>
         <p class="section-sub">Главный релиз</p>
       </div>
-      
+
       <div class="game-showcase tilt">
-        
+
         <div class="game-visual">
           <div class="release-badge">РЕЛИЗ: JAN-MAY 2027</div>
           <div class="game-visual-text">RED<br>FOREST</div>
@@ -364,15 +489,114 @@
           <div class="game-genre">Survival Horror / Open World</div>
           <h3 class="game-title">RED FOREST</h3>
           <p class="game-desc">
-            2D игра про выживание в зомби апокалипсисе
+            3D игра про выживание в зомби апокалипсисе
           </p>
-          
+
           <div class="game-features">
+            <span class="highlight">3D</span>
             <span>Хардкорное выживание</span>
             <span>Открытый мир</span>
           </div>
         </div>
 
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ АНОНСЫ ═══════════════ -->
+  <section class="extra-section" id="announcements">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">АНОНСЫ</h2>
+        <p class="section-sub">Официальные объявления о проекте</p>
+      </div>
+      <div class="cards-grid">
+        <article class="info-card tilt">
+          <h3>Анонс игры RED FOREST</h3>
+          <p>Первый тизер-трейлер и открытие страницы в Steam. Показываем мир, заражение и первые механики выживания.</p>
+          <time datetime="2026-10-18">15 ЯНВАРЯ 2025</time>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ РЕЛИЗЫ ═══════════════ -->
+  <section class="extra-section" id="releases">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">РЕЛИЗЫ</h2>
+        <p class="section-sub">История версий и обновлений</p>
+      </div>
+      <ul class="release-list">
+        <li class="release-item">
+          <div>
+            <strong>Ранний доступ (Early Access)</strong>
+            <div class="date">4 квартал 2026 года</div>
+          </div>
+          <span class="tag">v0.1</span>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ═══════════════ ПОРТФОЛИО ═══════════════ -->
+  <section class="extra-section" id="portfolio">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">ПОРТФОЛИО</h2>
+        <p class="section-sub">Лучшие работы и материалы по проекту</p>
+      </div>
+      <div class="portfolio-grid">
+        <figure class="portfolio-item tilt">
+          <img src="img/art-1.jpg" alt="Концепт-арт леса" onerror="this.parentElement.innerHTML='<div class=\'portfolio-placeholder\'>КОНЦЕПТ-АРТ ЛЕСА</div>'">
+          <figcaption>Концепт-арт: Красный лес</figcaption>
+        </figure>
+        <figure class="portfolio-item tilt">
+          <img src="img/ui-1.jpg" alt="Интерфейс игры" onerror="this.parentElement.innerHTML='<div class=\'portfolio-placeholder\'>ИНТЕРФЕЙС ВЫЖИВАНИЯ</div>'">
+          <figcaption>Интерфейс выживания</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ ПРЕВЬЮ САЙТА ═══════════════ -->
+  <section class="extra-section" id="preview">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">ПРЕВЬЮ <span>САЙТА</span></h2>
+        <p class="section-sub">Предварительная версия для проверки</p>
+      </div>
+      <div class="preview-box">
+        <div>
+          <h3>Тестовая версия сайта</h3>
+          <p>Предварительная версия сайта игры — для проверки дизайна, навигации и функционала перед публичным запуском. Обратите внимание: возможны заглушки и недоработки.</p>
+        </div>
+        <a href="/preview" class="btn-primary" target="_blank" rel="noopener">
+          Открыть превью →
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ ПРЕДЛОЖКА ═══════════════ -->
+  <section class="extra-section" id="feedback">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">ПРЕДЛОЖКА</h2>
+        <p class="section-sub">Идеи, новости, баги и предложения</p>
+      </div>
+
+      <div class="feedback-link">
+        <div>
+          <h3>Написать в MAX</h3>
+          <p>По предложениям и сообщениям о багах пишите в MAX. Отвечаю лично, читаю всё.</p>
+        </div>
+        <a href="https://max.ru/u/f9LHodD0cOLCz4jjmmtJlFezicHBEfHwRBHioCTMtB8UXcP1C9IDbMLg_f0"
+           class="btn-primary"
+           target="_blank"
+           rel="noopener">
+          Написать в MAX →
+        </a>
       </div>
     </div>
   </section>
@@ -403,7 +627,7 @@
       const preloader = document.getElementById('preloader');
       preloader.style.opacity = '0';
       setTimeout(() => preloader.style.display = 'none', 800);
-      
+
       gsap.from('.hero-content > *', {
         y: 30, opacity: 0, duration: 1, stagger: 0.1, ease: 'power3.out', delay: 0.5
       });
@@ -430,7 +654,7 @@
     gsap.set(ring, { x: ringX, y: ringY });
   });
 
-  document.querySelectorAll('a, button, .game-showcase').forEach(el => {
+  document.querySelectorAll('a, button, .game-showcase, .info-card, .portfolio-item, input, select, textarea').forEach(el => {
     el.addEventListener('mouseenter', () => ring.classList.add('hover'));
     el.addEventListener('mouseleave', () => ring.classList.remove('hover'));
   });
@@ -444,10 +668,10 @@
       const y = e.clientY - rect.top;
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
-      
+
       const rotateX = ((y - centerY) / centerY) * -4;
       const rotateY = ((x - centerX) / centerX) * 4;
-      
+
       gsap.to(card, {
         rotationX: rotateX, rotationY: rotateY, transformPerspective: 1500,
         duration: 0.4, ease: "power2.out"
@@ -463,7 +687,7 @@
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-  
+
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
