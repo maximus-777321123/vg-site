@@ -34,14 +34,11 @@ export function initSky(scene) {
                 vec3 col = h > 0.0
                     ? mix(midColor, topColor, pow(h, 0.55))
                     : mix(midColor, botColor, pow(-h, 0.7));
-                
                 float sunDot = dot(dir, sunDirection);
                 float sunDisk = smoothstep(0.998, 0.9995, sunDot);
                 col = mix(col, vec3(1.0, 0.95, 0.8), sunDisk);
-                
                 float glow = pow(max(sunDot, 0.0), 64.0) * 0.5;
                 col += vec3(1.0, 0.6, 0.3) * glow;
-                
                 gl_FragColor = vec4(col, 1.0);
             }`
     });
@@ -246,17 +243,16 @@ export function initClouds(scene) {
     }
 }
 
-/* ========================= ПЫЛЬ (ИСПРАВЛЕНО) ========================= */
+/* ========================= ПЫЛЬ ========================= */
 const DUST_COUNT = 1200;
 const dustGeo = new THREE.BufferGeometry();
 let dustPoints = null;
-
 export function initDust(scene) {
     const arr = new Float32Array(DUST_COUNT * 3);
     for (let i = 0; i < DUST_COUNT; i++) {
-        arr[i*3] = (Math.random() - 0.5) * 800; // Большой разброс по X
+        arr[i*3] = (Math.random() - 0.5) * 800;
         arr[i*3+1] = Math.random() * 60;
-        arr[i*3+2] = (Math.random() - 0.5) * 800; // Большой разброс по Z
+        arr[i*3+2] = (Math.random() - 0.5) * 800;
     }
     dustGeo.setAttribute('position', new THREE.BufferAttribute(arr, 3));
     const mat = new THREE.PointsMaterial({ color: 0xd9a074, size: 0.6, transparent: true, opacity: 0.35, depthWrite: false, sizeAttenuation: true });
@@ -266,20 +262,13 @@ export function initDust(scene) {
 
 export function updateDust(dt, time, center) {
     if (!dustPoints) return;
-    
-    // Пыль НЕ привязана к дрону (position = 0,0,0)
-    dustPoints.position.set(0, 0, 0); 
-    
+    dustPoints.position.set(0, 0, 0);
     const arr = dustGeo.attributes.position.array;
     for (let i = 0; i < DUST_COUNT; i++) {
-        // Плавно поднимается вверх
         arr[i*3+1] += dt * (1.5 + (i % 5) * 0.4);
         if (arr[i*3+1] > 60) arr[i*3+1] = 0;
-        
-        // Снос ветром
         arr[i*3] += Math.sin(time * 0.5 + i) * dt * 0.6;
         
-        // Переспавн, если пылинка улетела далеко от дрона
         const dx = arr[i*3] - center.x;
         const dz = arr[i*3+2] - center.z;
         if (dx*dx + dz*dz > 400*400) {
@@ -439,6 +428,8 @@ const HEMI_EARTH= new THREE.Color(0xc8e8ff);
 let lastColorUpdate = 0, lastVegUpdate = 0, lastT = -1;
 
 export function applyTerraforming(time) {
+    if (state.mode !== 'game') return;
+
     const t = (state.terra.temp + state.terra.atmo + state.terra.water) / 300;
     const fog = refs.scene.fog.color;
 
