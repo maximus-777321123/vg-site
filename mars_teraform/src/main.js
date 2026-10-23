@@ -61,7 +61,6 @@ initClouds(scene);
 initDust(scene);
 initSmoke(scene);
 
-/* ============ СУЩНОСТИ ============ */
 initDrone(scene);
 initNodes(scene);
 initCrates(scene);
@@ -77,22 +76,48 @@ controls.maxDistance = 65;
 controls.minPolarAngle = 0.05;
 controls.maxPolarAngle = Math.PI / 2 + 0.1;
 controls.rotateSpeed = 0.7;
+controls.enabled = false;
 refs.controls = controls;
 
 /* ============ ВВОД ============ */
 const keys = {};
 const menuEl = document.getElementById('buildMenu');
+const npcDialogEl = document.getElementById('npcDialog');
+const subtitleEl = document.getElementById('subtitle');
+
+function showSubtitle(text, duration) {
+    if (!subtitleEl) return;
+    subtitleEl.textContent = text;
+    subtitleEl.classList.add('show');
+    setTimeout(() => subtitleEl.classList.remove('show'), duration);
+}
 
 addEventListener('keydown', e => {
+    if (state.mode !== 'game') return;
     if (e.code === 'Space') e.preventDefault();
     keys[e.code] = true;
     
     if (e.code === 'Escape') { 
         clearGhost(); state.selected = null; 
         menuEl.classList.remove('show'); 
+        npcDialogEl.classList.remove('show');
     }
     if (e.code === 'KeyB') {
         menuEl.classList.toggle('show');
+    }
+    if (e.code === 'KeyE') {
+        let nearNPC = null;
+        for (const npc of rovers) {
+            if (dronePos.distanceTo(npc.mesh.position) < 15) {
+                nearNPC = npc;
+                break;
+            }
+        }
+        if (nearNPC) {
+            document.getElementById('npcName').textContent = nearNPC.name;
+            document.getElementById('npcText').textContent = nearNPC.questText;
+            npcDialogEl.classList.add('show');
+        }
     }
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
@@ -106,20 +131,21 @@ function selectBuilding(type) {
 
 let pointerDown = null;
 renderer.domElement.addEventListener('pointerdown', e => {
+    if (state.mode !== 'game') return;
     if (e.button === 0) pointerDown = { x: e.clientX, y: e.clientY };
 });
 renderer.domElement.addEventListener('pointerup', e => {
-    if (e.button !== 0 || !pointerDown) return;
+    if (state.mode !== 'game' || e.button !== 0 || !pointerDown) return;
     const d = Math.hypot(e.clientX - pointerDown.x, e.clientY - pointerDown.y);
     pointerDown = null;
     if (d > 7) return;
     if (state.selected) tryPlace(e.clientX, e.clientY, camera);
 });
 renderer.domElement.addEventListener('pointermove', e => {
-    if (state.selected) updateGhostPosition(e.clientX, e.clientY, camera);
+    if (state.mode === 'game' && state.selected) updateGhostPosition(e.clientX, e.clientY, camera);
 });
 
-/* ============ МЕНЮ ПОСТРОЙКИ ============ */
+/* ============ UI ============ */
 const menuGrid = document.getElementById('menuGrid');
 
 function renderMenu() {
@@ -130,23 +156,28 @@ function renderMenu() {
         const def = BUILDING_DEFS[type];
         const affordable = canAfford(def.cost);
         
-        const card = document.createElement('div');
-        card.className = `build-card ${affordable || state.creative ? '' : 'disabled'}`;
-        
+        // Форматируем стоимость полными словами
+        const costStr = Object.entries(def.cost)
+            .map(([k, v]) => `${v} ${RES_INFO[k].name}`)
+            .join(' · ');
+
         let reqText = '';
         if (type === 'nuclear') reqText = 'Требует: Система контроля, 2 Парогенератора, Помпа';
         if (type === 'terraformer') reqText = 'Требует: Лёд, Сплавы, Энергия';
 
         let outText = '';
-        if (def.energy > 0) outText = `+${def.energy} энергии`;
-        else if (def.energy < 0) outText = `-${-def.energy} энергии`;
+        if (def.energy > 0) outText = `+${def.energy}⚡`;
+        else if (def.energy < 0) outText = `-${-def.energy}⚡`;
         if (def.production) outText += ` | Производит: ${Object.entries(def.production).map(([k,v])=>`${k} ${v}/с`).join(', ')}`;
         if (def.terra) outText += ` | Терраформинг`;
 
+        const card = document.createElement('div');
+        card.className = `build-card ${affordable || state.creative ? '' : 'disabled'}`;
+        
         card.innerHTML = `
             <div class="bc-header">
                 <span class="bc-name">${def.name}</span>
-                ${state.creative ? '<span class="bc-cost" style="color:#6dffab">FREE</span>' : `<span class="bc-cost">${Object.entries(def.cost).map(([k,v]) => `${v} ${RES_INFO[k].short}`).join(' · ')}</span>`}
+                ${state.creative ? '<span class="bc-cost" style="color:#6dffab">БЕСПЛАТНО</span>' : `<span class="bc-cost">${costStr}</span>`}
             </div>
             <div class="bc-desc">${def.desc}</div>
             ${reqText ? `<div class="bc-req">${reqText}</div>` : ''}
@@ -178,7 +209,6 @@ btnCreative.addEventListener('click', () => {
     renderMenu();
 });
 
-/* ============ UI ============ */
 const ui = {
     iron: document.getElementById('ui-iron'),
     silicon: document.getElementById('ui-silicon'),
@@ -205,6 +235,8 @@ const ui = {
 function countType(t) { return state.buildings.filter(b => b.type === t).length; }
 
 function updateUI() {
+    if (state.mode !== 'game') return;
+    
     if (state.creative) {
         Object.keys(state.res).forEach(k => state.res[k] = 99999);
     }
@@ -219,36 +251,14 @@ function updateUI() {
     const { prod, cons, eff } = state.energy;
     ui.energy.textContent = `${prod.toFixed(0)} / ${cons.toFixed(0)}`;
     
-    const bc = state.batteries;
-    if (bc.capacity > 0) {
-        ui.battery.textContent = `${Math.floor(bc.charge)} / ${bc.capacity}${bc.overload > 5 ? ' ⚠' : ''}`;
-        ui.batteryLine.style.display = 'flex';
-        ui.batteryLine.classList.toggle('warn', bc.overload > 20);
-    } else {
-        ui.battery.textContent = '—';
-        ui.batteryLine.style.display = 'none';
-    }
-    
-    const reactor = state.buildings.find(b => b.type === 'nuclear');
-    if (reactor) {
-        ui.heat.textContent = `${Math.floor(state.reactor.heat)}%`;
-        ui.heat.style.color = state.reactor.heat > 80 ? '#ff5a5a' : '#ffa53d';
-        ui.heatLine.style.display = 'flex';
-    } else {
-        ui.heatLine.style.display = 'none';
-    }
-
     if (state.reactor.overheatPhase === 'shake') {
         ui.eff.textContent = `☢ ПЕРЕГРЕВ! ${(8 - state.reactor.overheatTimer).toFixed(1)}с`;
-        ui.eff.classList.add('warn');
-    } else if (bc.overload > 20) {
-        ui.eff.textContent = `⚠ ПЕРЕГРУЗ БАТАРЕЙ — ${(100 - bc.overload).toFixed(0)}%`;
         ui.eff.classList.add('warn');
     } else if (state.weather.storm) {
         ui.eff.textContent = `⚠ ПЫЛЬНАЯ БУРЯ`;
         ui.eff.classList.add('warn');
     } else if (cons > 0 && prod < cons) {
-        ui.eff.textContent = `⚠ НЕХВАТКА ЭНЕРГИИ — ${(eff * 100).toFixed(0)}%`;
+        ui.eff.textContent = `⚠ НЕХВАТКА ЭНЕРГИИ`;
         ui.eff.classList.add('warn');
     } else if (state.buildings.length > 0) {
         ui.eff.textContent = `✓ Сеть стабильна`;
@@ -282,10 +292,11 @@ function updateUI() {
 
 /* ============ ПОГОДА ============ */
 function updateWeather(dt) {
+    if (state.mode !== 'game') return;
     state.weather.timer -= dt;
     if (state.weather.timer <= 0) {
         state.weather.storm = !state.weather.storm;
-        state.weather.timer = state.weather.storm ? 15 : 45 + Math.random() * 30;
+        state.weather.timer = state.weather.storm ? 20 : 120 + Math.random() * 60;
         document.getElementById('weatherWarning').style.display = state.weather.storm ? 'block' : 'none';
     }
     const targetSun = state.weather.storm ? 0.5 : 2.5;
@@ -345,6 +356,8 @@ function spawnContaminationVisual(pos, radius) {
 
 /* ============ ЭКОНОМИКА ============ */
 function updateEconomy(dt) {
+    if (state.mode !== 'game') return;
+    
     let prod = 0, cons = 0;
     const hasControl = countType('controlSys');
     const hasSteam = countType('steamGen');
@@ -455,20 +468,274 @@ function updateEconomy(dt) {
 
 /* ============ ВОЛНЫ ВРАГОВ ============ */
 function updateWaves(dt) {
+    if (state.mode !== 'game') return;
     state.waveTimer -= dt;
     if (state.waveTimer <= 0) {
         state.waveCount++;
-        state.waveTimer = 40 + Math.random() * 20;
-        const count = 3 + state.waveCount * 2;
+        state.waveTimer = 90 + Math.random() * 30;
+        const count = 2 + Math.floor(state.waveCount * 0.5);
         for (let i = 0; i < count; i++) {
-            setTimeout(() => spawnAlien(scene, state.waveCount), i * 1000);
+            setTimeout(() => spawnAlien(scene, state.waveCount), i * 2000);
         }
+    }
+}
+
+/* ============ NPC (Марсоходы) ============ */
+const rovers = [];
+function initNPCs() {
+    for (let i = 0; i < 3; i++) {
+        const g = new THREE.Group();
+        const matBody = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.5 });
+        const matWheel = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.8 });
+        
+        const body = new THREE.Mesh(new THREE.BoxGeometry(4, 2, 6), matBody);
+        body.position.y = 2; body.castShadow = true; g.add(body);
+        
+        // Колеса
+        for(let j=0; j<4; j++) {
+            const w = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.5, 12), matWheel);
+            w.rotation.z = Math.PI/2;
+            w.position.set((j<2?1:-1)*2.2, 1, (j%2===0?2:-2));
+            g.add(w);
+        }
+        // Антенна
+        const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 2, 8), matWheel);
+        ant.position.set(0, 4, 0); g.add(ant);
+        const dish = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 8), matBody);
+        dish.position.set(0, 5, 0); g.add(dish);
+        
+        const x = (Math.random() - 0.5) * 200;
+        const z = (Math.random() - 0.5) * 200;
+        g.position.set(x, terrainHeight(x, z), z);
+        scene.add(g);
+        
+        rovers.push({
+            mesh: g,
+            name: `Марсоход "Кьюриосити-${i+1}"`,
+            questText: "Привет, дрон. Мне нужна помощь с энергоснабжением. Построй солнечную панель и соедини её с базой с помощью ЛЭП.",
+            targetPos: new THREE.Vector3(x + (Math.random()-0.5)*50, 0, z + (Math.random()-0.5)*50)
+        });
+    }
+}
+
+function updateNPCs(dt) {
+    for (const r of rovers) {
+        if (r.mesh.position.distanceTo(r.targetPos) < 2) {
+            r.targetPos.set(
+                (Math.random() - 0.5) * 200,
+                0,
+                (Math.random() - 0.5) * 200
+            );
+        }
+        const dir = r.targetPos.clone().sub(r.mesh.position);
+        dir.y = 0;
+        if (dir.length() > 1) {
+            dir.normalize();
+            r.mesh.position.addScaledVector(dir, 3 * dt);
+            r.mesh.position.y = terrainHeight(r.mesh.position.x, r.mesh.position.z);
+            r.mesh.lookAt(r.mesh.position.clone().add(dir));
+        }
+    }
+}
+
+/* ============ КАТСЦЕНА ============ */
+let cinematicStage = 0;
+let cinematicTimer = 0;
+let marsPlanet = null;
+let spaceScene = null;
+let spaceCamera = null;
+
+function initSpaceScene() {
+    spaceScene = new THREE.Scene();
+    spaceCamera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 100000);
+
+    // Звезды
+    const starGeo = new THREE.BufferGeometry();
+    const starCount = 5000;
+    const starPos = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount; i++) {
+        starPos[i*3] = (Math.random() - 0.5) * 50000;
+        starPos[i*3+1] = (Math.random() - 0.5) * 50000;
+        starPos[i*3+2] = (Math.random() - 0.5) * 50000;
+    }
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    const starField = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 3, transparent: true, opacity: 0.8 }));
+    spaceScene.add(starField);
+
+    // Марс
+    function createMarsTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1024; canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#9a4b2a'; ctx.fillRect(0, 0, 1024, 512);
+        ctx.fillStyle = '#4a2114';
+        for (let i = 0; i < 200; i++) {
+            ctx.beginPath(); ctx.arc(Math.random()*1024, Math.random()*512, Math.random()*40+10, 0, Math.PI*2); ctx.fill();
+        }
+        return new THREE.CanvasTexture(canvas);
+    }
+    const marsGeo = new THREE.SphereGeometry(5000, 64, 64);
+    const marsMat = new THREE.MeshStandardMaterial({ map: createMarsTexture(), roughness: 0.9 });
+    marsPlanet = new THREE.Mesh(marsGeo, marsMat);
+    marsPlanet.position.set(0, 0, -15000); 
+    spaceScene.add(marsPlanet);
+
+    // Свет (подсветка сзади)
+    const backLight = new THREE.DirectionalLight(0xffaa88, 3.0);
+    backLight.position.set(0, 0, -20000);
+    spaceScene.add(backLight);
+    spaceScene.add(new THREE.AmbientLight(0x111122, 1.5));
+}
+
+function startCinematic() {
+    state.mode = 'cinematic';
+    document.getElementById('mainMenu').classList.add('hide');
+    initSpaceScene();
+    showSubtitle("Марс. Спустя годы после крушения...", 5000);
+    cinematicStage = 1;
+    cinematicTimer = 0;
+}
+
+function updateCinematic(dt) {
+    cinematicTimer += dt;
+
+    if (cinematicStage === 1) {
+        marsPlanet.rotation.y += dt * 0.05;
+        
+        if (cinematicTimer > 5) {
+            renderer.toneMappingExposure = 5.0;
+            setTimeout(() => { renderer.toneMappingExposure = 1.15; }, 500);
+            
+            controls.target.copy(dronePos);
+            camera.position.set(dronePos.x + 25, dronePos.y + 18, dronePos.z + 25);
+            controls.update();
+            
+            state.mode = 'game';
+            controls.enabled = true;
+            document.getElementById('hud').classList.add('active');
+            cinematicStage = 2;
+            
+            spawnCrashSite();
+        }
+    }
+}
+
+/* ============ МЕСТО КРУШЕНИЯ ============ */
+function spawnCrashSite() {
+    // Группа для ракеты
+    const r = new THREE.Group();
+    
+    // Создаем ракету внутри группы (центр координат группы — это центр ракеты)
+    const matWhite = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.4, metalness: 0.5 });
+    const matBlack = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6 });
+    
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.0, 15, 32), matWhite);
+    body.castShadow = true;
+    r.add(body);
+    
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(2.0, 6, 32), matWhite);
+    nose.position.y = 10.5;
+    r.add(nose);
+    
+    const eng = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 2.0, 2, 16), matBlack);
+    eng.position.y = -8.5;
+    r.add(eng);
+
+    // Втыкаем носом в землю
+    r.rotation.z = Math.PI / 1.5; // Наклон
+    r.rotation.x = 0.2; // Немного в бок
+    
+    // Позиция (нос должен уйти в землю)
+    const x = dronePos.x + 25;
+    const z = dronePos.z + 15;
+    const groundY = terrainHeight(x, z);
+    
+    // Поднимаем центр так, чтобы нос (который на 10.5 выше центра) оказался в земле
+    // Нос смещен в сторону из-за поворота, так что высоту берем с запасом
+    r.position.set(x, groundY + 6, z);
+    scene.add(r);
+
+    // Лут (ящики) разбросан
+    for (let i = 0; i < 12; i++) {
+        const lootX = x + (Math.random() - 0.5) * 25;
+        const lootZ = z + (Math.random() - 0.5) * 25;
+        const lootMesh = new THREE.Mesh(
+            new THREE.BoxGeometry(1.5, 1.5, 1.5),
+            new THREE.MeshStandardMaterial({ color: 0xffcc00, roughness: 0.3, metalness: 0.8 })
+        );
+        lootMesh.position.set(lootX, terrainHeight(lootX, lootZ) + 0.75, lootZ);
+        lootMesh.castShadow = true;
+        scene.add(lootMesh);
+    }
+}
+
+document.getElementById('btnStart').addEventListener('click', startCinematic);
+
+/* ============ ЦИКЛ ============ */
+const clock = new THREE.Clock();
+let uiTimer = 0;
+let deathShown = false;
+
+function animate() {
+    requestAnimationFrame(animate);
+    const dt = Math.min(clock.getDelta(), 0.05);
+    const t = clock.elapsedTime;
+
+    if (state.mode === 'menu') {
+        camera.position.x = Math.sin(t * 0.1) * 30;
+        camera.position.z = Math.cos(t * 0.1) * 30;
+        camera.position.y = 15;
+        camera.lookAt(0, 5, 0);
+        renderer.render(scene, camera);
+    } else if (state.mode === 'cinematic') {
+        updateCinematic(dt);
+        renderer.render(spaceScene, spaceCamera);
+    } else if (state.mode === 'game') {
+        updateWeather(dt);
+        updateWaves(dt);
+        updateDrone(dt, t, keys, camera);
+        updateNodes(dt);
+        updateCrates(dt, t);
+        updateEconomy(dt);
+        updateEnemies(dt, scene);
+        updateProjectiles(dt, scene);
+        updateBuildingsVisual(dt, t);
+        updateNPCs(dt);
+        updateCamera(dt);
+        updateEnvironment();
+        updateDust(dt, t, dronePos);
+        updateBursts(dt);
+        updateSmoke(dt);
+        applyTerraforming(t);
+
+        if (state.dmgFlash > 0) {
+            state.dmgFlash -= dt * 2;
+            renderer.domElement.style.boxShadow = `inset 0 0 100px rgba(255, 0, 0, ${state.dmgFlash * 0.8})`;
+        } else {
+            renderer.domElement.style.boxShadow = 'none';
+        }
+
+        waterUniforms.time.value = t;
+
+        if (!deathShown && isDroneDead()) {
+            deathShown = true;
+            document.getElementById('deathScreen').classList.add('show');
+        }
+
+        uiTimer += dt;
+        if (uiTimer > 0.08) { 
+            uiTimer = 0; 
+            updateUI(); 
+        }
+
+        renderer.render(scene, camera);
     }
 }
 
 /* ============ КАМЕРА ============ */
 const camTarget = new THREE.Vector3();
 function updateCamera(dt) {
+    if (state.mode !== 'game') return;
     camTarget.set(dronePos.x, dronePos.y + 1.5, dronePos.z);
     const d = camTarget.clone().sub(controls.target);
     d.multiplyScalar(1 - Math.exp(-7 * dt));
@@ -479,6 +746,7 @@ function updateCamera(dt) {
 
 /* ============ ОКРУЖЕНИЕ ============ */
 function updateEnvironment() {
+    if (state.mode !== 'game') return;
     sun.position.set(dronePos.x + 20, dronePos.y + 40, dronePos.z + 20);
     sun.target.position.copy(dronePos);
     sun.target.updateMatrixWorld();
@@ -497,70 +765,24 @@ function updateEnvironment() {
     }
 }
 
-/* ============ ЦИКЛ ============ */
-const clock = new THREE.Clock();
-let uiTimer = 0;
-let deathShown = false;
-
-function animate() {
-    requestAnimationFrame(animate);
-    const dt = Math.min(clock.getDelta(), 0.05);
-    const t = clock.elapsedTime;
-
-    updateWeather(dt);
-    updateWaves(dt);
-    updateDrone(dt, t, keys, camera);
-    updateNodes(dt);
-    updateCrates(dt, t);
-    updateEconomy(dt);
-    updateEnemies(dt, scene);
-    updateProjectiles(dt, scene);
-    updateBuildingsVisual(dt, t);
-    updateCamera(dt);
-    updateEnvironment();
-    updateDust(dt, t, dronePos);
-    updateBursts(dt);
-    updateSmoke(dt);
-    applyTerraforming(t);
-
-    // Урон от красной вспышки
-    if (state.dmgFlash > 0) {
-        state.dmgFlash -= dt * 2;
-        renderer.domElement.style.boxShadow = `inset 0 0 100px rgba(255, 0, 0, ${state.dmgFlash * 0.8})`;
-    } else {
-        renderer.domElement.style.boxShadow = 'none';
-    }
-
-    waterUniforms.time.value = t;
-
-    if (!deathShown && isDroneDead()) {
-        deathShown = true;
-        document.getElementById('deathScreen').classList.add('show');
-    }
-
-    uiTimer += dt;
-    if (uiTimer > 0.08) { 
-        uiTimer = 0; 
-        updateUI(); 
-    }
-
-    renderer.render(scene, camera);
-}
-
 /* ============ СТАРТ ============ */
 addEventListener('resize', () => {
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
+    if(spaceCamera) {
+        spaceCamera.aspect = innerWidth / innerHeight;
+        spaceCamera.updateProjectionMatrix();
+    }
     renderer.setSize(innerWidth, innerHeight);
 });
 
-controls.target.copy(dronePos);
-camera.position.set(dronePos.x + 25, dronePos.y + 18, dronePos.z + 25);
-controls.update();
+camera.position.set(0, 15, 30);
+camera.lookAt(0, 5, 0);
 
 document.getElementById('restartBtn').addEventListener('click', () => location.reload());
 
-updateUI();
+initNPCs();
+
 animate();
 
 setTimeout(() => {
