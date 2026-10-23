@@ -36,19 +36,24 @@ export const MAP_SIZE = 3000;
 export const WATER_BASE = -8;
 export const WATER_MAX = 0;
 
+// ДОБАВЛЕНЫ ПОЛНЫЕ ИМЕНА (name) И СОКРАЩЕНИЯ (short)
 export const RES_INFO = {
-    iron:    { short: 'Fe',    color: 0xc07a4a },
-    silicon: { short: 'Si',    color: 0xb9c9dc },
-    carbon:  { short: 'C',     color: 0x5a5a68 },
-    ice:     { short: 'H₂O',   color: 0x7fd8ff },
-    water:   { short: 'W',     color: 0x4fc3f7 },
-    alloys:  { short: 'Alloy', color: 0xffc94a }
+    iron:    { name: 'Железо',   short: 'Fe',    color: 0xc07a4a },
+    silicon: { name: 'Кремний',  short: 'Si',    color: 0xb9c9dc },
+    carbon:  { name: 'Углерод',  short: 'C',     color: 0x5a5a68 },
+    ice:     { name: 'Лёд',      short: 'H₂O',   color: 0x7fd8ff },
+    water:   { name: 'Вода',     short: 'W',     color: 0x4fc3f7 },
+    alloys:  { name: 'Сплавы',   short: 'Alloy', color: 0xffc94a }
 };
 
 export const BUILDING_DEFS = {
     solar: { 
         name: 'Солнечная панель', cost: { silicon: 4, iron: 3 }, energy: 25, hp: 100,
         desc: 'Базовый генератор энергии. Не работает во время бурь.' 
+    },
+    windTurbine: { 
+        name: 'Ветряк', cost: { iron: 10, silicon: 4 }, energy: 15, hp: 120,
+        desc: 'Работает даже в бурю.' 
     },
     drill: { 
         name: 'Бур', cost: { iron: 8, silicon: 5 }, energy: -5, hp: 150,
@@ -113,8 +118,8 @@ export function terrainHeight(x, z) {
 export const state = {
     res: { iron: 8, silicon: 6, carbon: 4, ice: 2, water: 0, alloys: 0 },
     buildings: [],
-    enemies: [],        // <-- ДОБАВЛЕНО
-    projectiles: [],    // <-- ДОБАВЛЕНО
+    enemies: [],
+    projectiles: [],
     energy: { prod: 0, cons: 0, eff: 1 },
     terra: { temp: 0, atmo: 0, water: 0 },
     selected: null,
