@@ -185,12 +185,19 @@
   .section-title span { color: var(--primary); text-shadow: 0 0 20px var(--primary); }
   .section-sub { color: var(--muted); font-size: 18px; }
 
-  /* ═══════════════ GAME SHOWCASE ═══════════════ */
+  /* ═══════════════ GAME SHOWCASE GRID ═══════════════ */
+  .showcase-grid {
+    display: grid; grid-template-columns: 1fr; gap: 32px;
+  }
+  @media (min-width: 1100px) {
+    .showcase-grid { grid-template-columns: 1fr 1fr; }
+  }
+
   .game-showcase {
     background: linear-gradient(135deg, rgba(15,15,20,0.95), rgba(5,5,10,0.95));
     border: 1px solid rgba(255, 51, 51, 0.3);
     border-radius: 20px; overflow: hidden; position: relative;
-    display: flex; flex-direction: row; min-height: 500px;
+    display: flex; flex-direction: column;
     transform-style: preserve-3d; transition: border-color 0.3s, box-shadow 0.3s;
     box-shadow: 0 0 50px rgba(0,0,0,0.8);
   }
@@ -200,7 +207,7 @@
   }
 
   .game-visual {
-    flex: 1; position: relative;
+    position: relative; min-height: 240px;
     background: linear-gradient(45deg, #1a0505, #4a0a0a);
     display: flex; align-items: center; justify-content: center;
     overflow: hidden;
@@ -217,50 +224,83 @@
     opacity: 0.15; mix-blend-mode: overlay;
   }
 
+  /* MARS TERAFORMER — отдельная цветовая тема */
+  .game-showcase.mars { border-color: rgba(168, 85, 247, 0.35); }
+  .game-showcase.mars:hover { border-color: var(--primary); box-shadow: 0 0 60px rgba(168, 85, 247, 0.25); }
+  .game-showcase.mars .game-visual {
+    background: linear-gradient(45deg, #1a0a05, #4a1a0a);
+  }
+  .game-showcase.mars .game-visual::before {
+    background:
+      radial-gradient(circle at 80% 20%, rgba(255, 120, 40, 0.25) 0%, transparent 50%),
+      repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(168,85,247,0.04) 40px, rgba(168,85,247,0.04) 41px);
+  }
+  .game-showcase.mars .release-badge {
+    border-color: var(--primary); color: var(--primary);
+    text-shadow: 0 0 10px var(--primary);
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+  }
+  .game-showcase.mars .game-genre { color: var(--primary); }
+  .game-showcase.mars .game-title { text-shadow: 0 0 20px rgba(168, 85, 247, 0.5); }
+
   .release-badge {
-    position: absolute; top: 30px; left: 30px; z-index: 5;
+    position: absolute; top: 20px; left: 20px; z-index: 5;
     background: rgba(0,0,0,0.7); border: 1px solid var(--red);
-    padding: 10px 20px; border-radius: 8px;
-    font-family: var(--font-head); font-size: 16px; font-weight: 700; letter-spacing: 0.1em;
+    padding: 8px 16px; border-radius: 8px;
+    font-family: var(--font-head); font-size: 13px; font-weight: 700; letter-spacing: 0.1em;
     color: var(--red); text-shadow: 0 0 10px var(--red);
     box-shadow: 0 0 20px rgba(255, 51, 51, 0.3);
     backdrop-filter: blur(5px);
   }
 
   .game-visual-text {
-    font-family: var(--font-head); font-size: 80px; font-weight: 900;
+    font-family: var(--font-head); font-size: clamp(40px, 6vw, 64px); font-weight: 900;
     color: rgba(255,255,255,0.05); z-index: 2; letter-spacing: 0.1em;
-    transform: rotate(-10deg);
+    transform: rotate(-10deg); text-align: center; line-height: 1;
+  }
+
+  /* Иконка MARS TERAFORMER */
+  .mars-icon {
+    position: relative; z-index: 3; width: 96px; height: 96px;
+    object-fit: contain; border-radius: 16px;
+    filter: drop-shadow(0 0 25px rgba(255, 120, 40, 0.7));
+    background: rgba(0,0,0,0.3);
+    padding: 6px;
   }
 
   .game-details {
-    flex: 1; padding: 60px; position: relative; z-index: 2;
+    padding: 32px 36px; position: relative; z-index: 2;
     display: flex; flex-direction: column; justify-content: center;
   }
 
   .game-genre {
     font-family: var(--font-head); font-size: 12px; font-weight: 700; letter-spacing: 0.15em;
-    color: var(--red); margin-bottom: 15px; text-transform: uppercase;
+    color: var(--red); margin-bottom: 12px; text-transform: uppercase;
   }
 
   .game-title {
-    font-family: var(--font-head); font-size: clamp(40px, 5vw, 64px); font-weight: 900;
-    line-height: 1; margin-bottom: 20px; text-transform: uppercase;
+    font-family: var(--font-head); font-size: clamp(28px, 3.5vw, 44px); font-weight: 900;
+    line-height: 1; margin-bottom: 16px; text-transform: uppercase;
     color: #fff; text-shadow: 0 0 20px rgba(255, 51, 51, 0.5);
   }
 
   .game-desc {
-    color: var(--muted); font-size: 18px; line-height: 1.6; margin-bottom: 40px;
+    color: var(--muted); font-size: 17px; line-height: 1.6; margin-bottom: 24px;
   }
 
-  .game-features { display: flex; gap: 20px; flex-wrap: wrap; }
+  .game-features { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
   .game-features span {
     background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-    padding: 6px 12px; border-radius: 4px; font-size: 14px; color: #ccc;
+    padding: 6px 12px; border-radius: 4px; font-size: 13px; color: #ccc;
   }
   .game-features span.highlight {
     border-color: var(--primary); color: var(--primary);
     text-shadow: 0 0 10px var(--primary);
+  }
+
+  .game-showcase .btn-primary {
+    min-width: auto; align-self: flex-start;
+    padding: 12px 26px; font-size: 12px;
   }
 
   /* ═══════════════ EXTRA SECTIONS ═══════════════ */
@@ -401,10 +441,10 @@
     .hero-btns { justify-content: center; }
     .hero-avatar { width: 320px; height: 320px; }
 
-    .game-showcase { flex-direction: column; }
-    .game-visual { min-height: 300px; }
-    .game-details { padding: 40px 20px; text-align: center; }
+    .game-visual { min-height: 200px; }
+    .game-details { padding: 24px 22px; text-align: center; }
     .game-features { justify-content: center; }
+    .game-showcase .btn-primary { align-self: center; }
 
     .preview-box { padding: 30px 22px; text-align: center; justify-content: center; }
     .feedback-link { padding: 30px 22px; text-align: center; justify-content: center; }
@@ -438,7 +478,6 @@
     <a href="#announcements">Анонсы</a>
     <a href="#releases">Релизы</a>
     <a href="#portfolio">Портфолио</a>
-    <a href="#projects">Проекты автора</a>
     <a href="#preview">Превью</a>
     <a href="#feedback">Предложка</a>
     <a href="https://steamcommunity.com/profiles/76561199467946325/" target="_blank">Steam</a>
@@ -471,32 +510,64 @@
     </div>
   </section>
 
-  <!-- FLAGSHIP GAME -->
+  <!-- FLAGSHIP GAMES -->
   <section class="games" id="games">
     <div class="container">
       <div class="section-header">
-        <h2 class="section-title">МОЙ <span>ПРОЕКТ</span></h2>
-        <p class="section-sub">Главный релиз</p>
+        <h2 class="section-title">МОИ <span>ПРОЕКТЫ</span></h2>
+        <p class="section-sub">Главные релизы</p>
       </div>
 
-      <div class="game-showcase tilt">
+      <div class="showcase-grid">
 
-        <div class="game-visual">
-          <div class="release-badge">РЕЛИЗ: JAN-MAY 2027</div>
-          <div class="game-visual-text">RED<br>FOREST</div>
+        <!-- RED FOREST -->
+        <div class="game-showcase tilt">
+          <div class="game-visual">
+            <div class="release-badge">РЕЛИЗ: JAN-MAY 2027</div>
+            <div class="game-visual-text">RED<br>FOREST</div>
+          </div>
+
+          <div class="game-details">
+            <div class="game-genre">Survival Horror / Open World</div>
+            <h3 class="game-title">RED FOREST</h3>
+            <p class="game-desc">
+              3D игра про выживание в зомби апокалипсисе
+            </p>
+
+            <div class="game-features">
+              <span class="highlight">3D</span>
+              <span>Хардкорное выживание</span>
+              <span>Открытый мир</span>
+            </div>
+          </div>
         </div>
 
-        <div class="game-details">
-          <div class="game-genre">Survival Horror / Open World</div>
-          <h3 class="game-title">RED FOREST</h3>
-          <p class="game-desc">
-            3D игра про выживание в зомби апокалипсисе
-          </p>
+        <!-- MARS TERAFORMER -->
+        <div class="game-showcase mars tilt">
+          <div class="game-visual">
+            <div class="release-badge">BROWSER GAME</div>
+            <img src="mars_teraformer/favicon.ico" alt="MARS TERAFORMER" class="mars-icon"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+            <div class="game-visual-text" style="display:none;">MARS<br>TERAFORMER</div>
+          </div>
 
-          <div class="game-features">
-            <span class="highlight">3D</span>
-            <span>Хардкорное выживание</span>
-            <span>Открытый мир</span>
+          <div class="game-details">
+            <div class="game-genre">Browser / HTML Game</div>
+            <h3 class="game-title">MARS TERAFORMER</h3>
+            <p class="game-desc">
+              HTML-игра про терраформирование Марса. Запускается прямо в браузере.
+            </p>
+
+            <div class="game-features">
+              <span class="highlight">HTML</span>
+              <span>Браузер</span>
+              <span>Стратегия</span>
+            </div>
+
+            <a href="mars_teraformer/index.html" class="btn-primary magnetic"
+               target="_blank" rel="noopener">
+              Играть →
+            </a>
           </div>
         </div>
 
@@ -556,29 +627,6 @@
           <img src="img/ui-1.jpg" alt="Интерфейс игры" onerror="this.parentElement.innerHTML='<div class=\'portfolio-placeholder\'>ИНТЕРФЕЙС ВЫЖИВАНИЯ</div>'">
           <figcaption>Интерфейс выживания</figcaption>
         </figure>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══════════════ ПРОЕКТЫ АВТОРА ═══════════════ -->
-  <section class="extra-section" id="projects">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">ПРОЕКТЫ <span>АВТОРА</span></h2>
-        <p class="section-sub">Другие игры и эксперименты</p>
-      </div>
-
-      <div class="cards-grid">
-        <article class="info-card tilt" style="display:flex;flex-direction:column;gap:16px;">
-          <div class="game-genre" style="margin-bottom:0;color:var(--primary);">Browser / HTML Game</div>
-          <h3>MARS TERAFORMER</h3>
-          <p>HTML-игра про терраформирование Марса. Запускается прямо в браузере.</p>
-          <a href="mars_teraformer/" class="btn-primary magnetic"
-             target="_blank" rel="noopener"
-             style="min-width:auto;padding:12px 24px;font-size:12px;align-self:flex-start;">
-            Играть →
-          </a>
-        </article>
       </div>
     </div>
   </section>
