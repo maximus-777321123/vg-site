@@ -3,96 +3,138 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MARS TERRAFORMER — Дрон-выживший</title>
+<title>MARS TERRAFORMER</title>
 <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
     body { background: #0a0605; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; color: #cfe4f5; user-select: none; }
     canvas { display: block; }
-    #hud { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
-    .panel { position: absolute; background: linear-gradient(160deg, rgba(12,22,34,.9), rgba(8,14,22,.94)); border: 1px solid rgba(90,190,255,.22); border-radius: 10px; padding: 12px 14px; backdrop-filter: blur(8px); box-shadow: 0 6px 28px rgba(0,0,0,.55); pointer-events: auto; font-size: 12px; }
-    .panel::before { content: ''; position: absolute; left: 8px; right: 8px; top: 0; height: 1.5px; background: linear-gradient(90deg, transparent, rgba(80,200,255,.7), transparent); }
-    .panel-title { font-size: 9.5px; letter-spacing: 2.4px; color: #4fb4e8; font-weight: 700; text-transform: uppercase; margin-bottom: 10px; }
     
-    #resPanel { top: 16px; left: 16px; min-width: 218px; }
-    .res-line { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 12.5px; color: #a8c4db; }
-    .res-line i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; box-shadow: 0 0 8px currentColor; }
-    .res-line b { margin-left: auto; color: #eaf6ff; font-variant-numeric: tabular-nums; font-weight: 600; }
-    .energy-line, .battery-line, .heat-line { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(90,190,255,.15); display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
-    .energy-line .bolt { color: #ffd34d; font-size: 14px; filter: drop-shadow(0 0 6px #ffd34d); }
-    .energy-line b, .battery-line b, .heat-line b { margin-left: auto; color: #ffe9a8; font-variant-numeric: tabular-nums; }
-    .battery-line .bat { color: #6dffab; font-size: 13px; filter: drop-shadow(0 0 6px #6dffab); }
-    .heat-line .fire { color: #ff5a5a; font-size: 14px; filter: drop-shadow(0 0 6px #ff5a5a); }
-    .eff-line { margin-top: 6px; font-size: 10.5px; color: #6f8ba3; min-height: 14px; }
-    .eff-line.warn { color: #ff7b6b; animation: blink 1s infinite; }
-    @keyframes blink { 50% { opacity: .4; } }
+    /* --- МЕНЮ --- */
+    #mainMenu {
+        position: fixed; inset: 0; z-index: 150;
+        display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
+        padding-left: 10vw;
+        background: linear-gradient(90deg, rgba(10,6,5,0.95) 0%, rgba(10,6,5,0.5) 50%, transparent 100%);
+        transition: opacity 0.8s ease, visibility 0.8s;
+    }
+    #mainMenu.hide { opacity: 0; visibility: hidden; }
+    .menu-title { font-size: 64px; font-weight: 900; letter-spacing: 12px; margin-bottom: 40px; color: #fff; text-shadow: 0 0 30px #ff4500; }
+    .menu-btn {
+        width: 300px; padding: 15px; margin-bottom: 15px;
+        background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3);
+        color: #fff; font-size: 20px; font-family: inherit; font-weight: bold; letter-spacing: 4px;
+        cursor: pointer; text-align: center; transition: all 0.3s;
+        clip-path: polygon(0 0, 100% 0, 95% 100%, 0% 100%);
+    }
+    .menu-btn:hover { background: #ff4500; border-color: #ff4500; padding-left: 30px; }
 
-    #terraPanel { top: 16px; right: 16px; width: 290px; }
-    .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; font-size: 11px; color: #a8c4db; }
-    .bar-row > span:first-child { width: 88px; flex-shrink: 0; }
-    .bar-row b { width: 40px; text-align: right; color: #eaf6ff; font-variant-numeric: tabular-nums; font-size: 11px; }
-    .track { flex: 1; height: 8px; border-radius: 4px; background: rgba(255,255,255,.07); overflow: hidden; }
-    .fill { height: 100%; width: 0%; border-radius: 4px; transition: width .15s linear; }
-    .fill.temp { background: linear-gradient(90deg, #ff6a3d, #ffb347); box-shadow: 0 0 12px rgba(255,140,60,.65); }
-    .fill.atmo { background: linear-gradient(90deg, #38bdf8, #67e8f9); box-shadow: 0 0 12px rgba(60,190,250,.65); }
-    .fill.water { background: linear-gradient(90deg, #2563eb, #38bdf8); box-shadow: 0 0 12px rgba(60,120,250,.65); }
-    .overall { margin-top: 11px; padding-top: 10px; border-top: 1px solid rgba(90,190,255,.15); font-size: 10px; letter-spacing: 1.4px; color: #4fb4e8; display: flex; justify-content: space-between; align-items: center; }
-    .overall b { font-size: 18px; color: #7dffb0; text-shadow: 0 0 14px rgba(80,255,150,.7); }
+    /* --- HUD ИГРЫ --- */
+    #hud { position: fixed; inset: 0; pointer-events: none; z-index: 10; opacity: 0; transition: opacity 0.5s; }
+    #hud.active { opacity: 1; }
+    
+    .panel { 
+        position: absolute; background: linear-gradient(160deg, rgba(12,22,34,.85), rgba(8,14,22,.9)); 
+        border: 1px solid rgba(90,190,255,.15); border-radius: 8px; padding: 10px 12px; 
+        backdrop-filter: blur(5px); pointer-events: auto; font-size: 11px;
+        box-shadow: 0 4px 15px rgba(0,0,0,.4);
+    }
+    .panel-title { font-size: 9px; letter-spacing: 1.5px; color: #4fb4e8; font-weight: 700; margin-bottom: 8px; }
+    
+    /* Ресурсы */
+    #resPanel { top: 12px; left: 12px; width: 180px; }
+    .res-line { display: flex; align-items: center; gap: 6px; padding: 2px 0; color: #a8c4db; }
+    .res-line i { width: 7px; height: 7px; border-radius: 1px; }
+    .res-line b { margin-left: auto; color: #eaf6ff; }
+    .energy-line { margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(90,190,255,.1); display: flex; align-items: center; gap: 6px; }
+    .energy-line .bolt { color: #ffd34d; font-size: 12px; }
+    .energy-line b { margin-left: auto; color: #ffe9a8; }
+    
+    /* Терраформирование */
+    #terraPanel { top: 12px; right: 12px; width: 220px; }
+    .bar-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; color: #a8c4db; }
+    .bar-row > span:first-child { width: 70px; flex-shrink: 0; font-size: 10px; }
+    .bar-row b { width: 30px; text-align: right; color: #eaf6ff; font-size: 10px; }
+    .track { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,.05); overflow: hidden; }
+    .fill { height: 100%; width: 0%; border-radius: 3px; }
+    .fill.temp { background: #ff6a3d; }
+    .fill.atmo { background: #38bdf8; }
+    .fill.water { background: #2563eb; }
+    .overall { margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(90,190,255,.1); font-size: 9px; color: #4fb4e8; display: flex; justify-content: space-between; align-items: center; }
+    .overall b { font-size: 14px; color: #7dffb0; }
 
-    #objPanel { top: 16px; left: 50%; transform: translateX(-50%); min-width: 320px; text-align: center; }
-    #objText { font-size: 12.5px; color: #ffd97d; }
+    /* Задача */
+    #objPanel { top: 12px; left: 50%; transform: translateX(-50%); text-align: center; padding: 6px 16px; border-radius: 20px; }
+    #objText { font-size: 11px; color: #ffd97d; }
     #objText::before { content: '▸ '; color: #4fb4e8; }
 
-    #btnMenu { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); padding: 12px 32px; background: linear-gradient(160deg, rgba(12,22,34,.95), rgba(8,14,22,.98)); border: 2px solid #38bdf8; border-radius: 8px; color: #eaf6ff; font-family: inherit; font-size: 14px; font-weight: bold; letter-spacing: 2px; cursor: pointer; box-shadow: 0 0 20px rgba(56,189,248,.4); pointer-events: auto; transition: all .2s; }
-    #btnMenu:hover { background: #38bdf8; color: #000; box-shadow: 0 0 40px rgba(56,189,248,.8); }
+    /* Кнопки */
+    #btnCreative { 
+        position: fixed; top: 12px; right: 240px; /* Сдвинули влево от терраформирования */
+        padding: 6px 12px; background: rgba(255, 170, 0, 0.15); border: 1px solid #ffaa00; 
+        border-radius: 4px; color: #ffaa00; font-family: inherit; font-size: 10px; 
+        cursor: pointer; pointer-events: auto; z-index: 20; 
+    }
+    #btnCreative.active { background: #ffaa00; color: #000; }
     
-    #btnCreative { position: fixed; top: 16px; left: 50%; transform: translateX(180px); padding: 8px 16px; background: rgba(255, 170, 0, 0.2); border: 1px solid #ffaa00; border-radius: 6px; color: #ffaa00; font-family: inherit; font-size: 11px; cursor: pointer; pointer-events: auto; transition: all .2s; }
-    #btnCreative.active { background: #ffaa00; color: #000; font-weight: bold; box-shadow: 0 0 15px #ffaa00; }
+    #btnMenu { 
+        position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); 
+        padding: 10px 24px; background: rgba(12,22,34,.9); border: 1px solid #38bdf8; 
+        border-radius: 6px; color: #eaf6ff; font-family: inherit; font-size: 12px; 
+        font-weight: bold; cursor: pointer; pointer-events: auto; z-index: 20; 
+    }
+    #btnMenu:hover { background: #38bdf8; color: #000; }
 
+    /* Меню постройки */
     #buildMenu { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); pointer-events: auto; }
     #buildMenu.show { display: flex; }
-    .menu-content { background: rgba(12,22,34,.95); border: 2px solid #38bdf8; border-radius: 12px; padding: 24px; max-width: 900px; width: 100%; max-height: 80vh; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; box-shadow: 0 0 50px rgba(56,189,248,.3); }
-    .menu-title { grid-column: 1 / -1; font-size: 18px; color: #fff; margin-bottom: 10px; text-align: center; letter-spacing: 4px; text-shadow: 0 0 15px #38bdf8; }
-    .build-card { background: rgba(0,0,0,0.5); border: 1px solid rgba(90,190,255,.3); border-radius: 8px; padding: 15px; cursor: pointer; transition: all .2s; display: flex; flex-direction: column; }
+    .menu-content { background: rgba(12,22,34,.95); border: 1px solid #38bdf8; border-radius: 12px; padding: 24px; max-width: 900px; width: 100%; max-height: 80vh; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+    .menu-title-b { grid-column: 1 / -1; font-size: 18px; color: #fff; margin-bottom: 10px; text-align: center; letter-spacing: 3px; }
+    
+    .build-card { 
+        background: rgba(0,0,0,0.5); border: 1px solid rgba(90,190,255,.2); border-radius: 8px; 
+        padding: 15px; cursor: pointer; transition: all .2s; display: flex; flex-direction: column; 
+    }
     .build-card:hover { border-color: #38bdf8; background: rgba(56,189,248,.1); transform: translateY(-2px); }
     .build-card.disabled { opacity: 0.4; cursor: not-allowed; }
+    
     .bc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
     .bc-name { font-size: 14px; font-weight: bold; color: #eaf6ff; }
-    .bc-cost { font-size: 11px; color: #ffaa00; background: rgba(255,170,0,0.1); padding: 2px 6px; border-radius: 4px; }
-    .bc-desc { font-size: 11px; color: #a8c4db; margin-bottom: 8px; flex-grow: 1; }
+    .bc-cost { font-size: 11px; color: #ffaa00; background: rgba(255,170,0,0.1); padding: 3px 8px; border-radius: 4px; }
+    
+    .bc-desc { font-size: 11px; color: #a8c4db; margin-bottom: 10px; flex-grow: 1; line-height: 1.4; }
     .bc-req { font-size: 10px; color: #ff5a5a; margin-bottom: 4px; }
-    .bc-out { font-size: 10px; color: #6dffab; }
+    .bc-out { font-size: 10px; color: #6dffab; font-weight: bold; }
+    
     .close-btn { grid-column: 1 / -1; text-align: center; margin-top: 16px; }
-    .close-btn button { padding: 8px 24px; background: #ff5a5a; border: none; border-radius: 4px; color: #fff; font-family: inherit; cursor: pointer; }
+    .close-btn button { padding: 10px 30px; background: #ff5a5a; border: none; border-radius: 6px; color: #fff; font-family: inherit; font-weight: bold; cursor: pointer; transition: all .2s; }
+    .close-btn button:hover { background: #ff7777; }
 
-    #hint { position: absolute; bottom: 24px; left: 16px; font-size: 10.5px; color: #4a6b80; line-height: 1.7; }
+    /* Диалог NPC */
+    #npcDialog { position: fixed; bottom: 20%; left: 50%; transform: translateX(-50%); width: 500px; background: rgba(12,22,34,.95); border: 1px solid #38bdf8; border-radius: 8px; padding: 16px; display: none; pointer-events: auto; z-index: 60; }
+    #npcDialog.show { display: block; }
+    #npcName { font-size: 16px; color: #38bdf8; font-weight: bold; margin-bottom: 8px; }
+    #npcText { font-size: 12px; color: #eaf6ff; margin-bottom: 16px; line-height: 1.4; }
+    #npcBtn { padding: 8px 16px; background: #38bdf8; border: none; border-radius: 4px; color: #000; font-weight: bold; cursor: pointer; float: right; }
+
+    #hint { position: absolute; bottom: 16px; left: 12px; font-size: 9.5px; color: #4a6b80; line-height: 1.5; }
     #hint b { color: #7fa8c4; }
 
-    #weatherWarning, #reactorWarning {
-        position: absolute; top: 100px; left: 50%; transform: translateX(-50%);
-        padding: 10px 24px; border-radius: 8px; font-weight: bold; letter-spacing: 2px;
-        display: none; pointer-events: none; text-align: center;
-    }
-    #weatherWarning { background: rgba(200, 50, 0, 0.85); color: #fff; border: 1px solid rgba(255,100,50,0.5); box-shadow: 0 0 30px rgba(200,50,0,0.5); }
-    #reactorWarning { top: 156px; background: rgba(255, 20, 20, 0.9); color: #fff; border: 2px solid #ff0; box-shadow: 0 0 50px rgba(255,50,50,0.9); animation: blink 0.4s infinite; }
+    #weatherWarning, #reactorWarning { position: absolute; top: 80px; left: 50%; transform: translateX(-50%); padding: 8px 16px; border-radius: 6px; font-weight: bold; letter-spacing: 1px; display: none; pointer-events: none; text-align: center; font-size: 11px; }
+    #weatherWarning { background: rgba(200, 50, 0, 0.85); color: #fff; }
+    #reactorWarning { top: 120px; background: rgba(255, 20, 20, 0.9); color: #fff; animation: blink 0.4s infinite; }
 
-    #winScreen, #deathScreen {
-        position: fixed; inset: 0; z-index: 100; display: none; flex-direction: column;
-        align-items: center; justify-content: center; backdrop-filter: blur(6px); text-align: center;
-    }
-    #winScreen { background: radial-gradient(circle at center, rgba(20,90,50,.88), rgba(3,10,20,.97)); }
-    #deathScreen { background: radial-gradient(circle at center, rgba(90,15,10,.92), rgba(10,3,0,.98)); }
-    #winScreen.show, #deathScreen.show { display: flex; animation: fadeIn 1s ease; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    #winScreen h1 { font-size: 46px; letter-spacing: 7px; font-weight: 300; color: #7dffb0; text-shadow: 0 0 50px rgba(80,255,150,.8); margin-bottom: 16px; }
-    #deathScreen h1 { font-size: 44px; letter-spacing: 6px; font-weight: 300; color: #ff5a5a; text-shadow: 0 0 60px rgba(255,50,50,.9); margin-bottom: 16px; }
-    #winScreen p, #deathScreen p { font-size: 14px; color: #9fd8bb; letter-spacing: 2px; margin-bottom: 6px; }
-    #deathScreen p { color: #ffb8a8; }
-    .sub { font-size: 11px; color: #4f8a6a; letter-spacing: 1px; margin-top: 26px; }
-    #restartBtn { margin-top: 30px; padding: 12px 34px; font-family: inherit; font-size: 13px; letter-spacing: 3px; background: transparent; color: #ff5a5a; border: 1px solid #ff5a5a; border-radius: 6px; cursor: pointer; transition: all .2s; }
+    #deathScreen { position: fixed; inset: 0; z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle at center, rgba(90,15,10,.92), rgba(10,3,0,.98)); backdrop-filter: blur(6px); text-align: center; }
+    #deathScreen.show { display: flex; }
+    #deathScreen h1 { font-size: 44px; letter-spacing: 6px; font-weight: 300; color: #ff5a5a; margin-bottom: 16px; }
+    #deathScreen p { font-size: 14px; color: #ffb8a8; margin-bottom: 6px; }
+    #restartBtn { margin-top: 30px; padding: 12px 34px; background: transparent; color: #ff5a5a; border: 1px solid #ff5a5a; border-radius: 6px; cursor: pointer; }
     #restartBtn:hover { background: #ff5a5a; color: #000; }
 
-    #loading { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; background: #0a0605; color: #4fb4e8; font-size: 12px; letter-spacing: 4px; transition: opacity .6s ease; }
+    #subtitle { position: fixed; bottom: 10%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 6px; font-size: 16px; color: #fff; text-align: center; opacity: 0; transition: opacity 0.5s; pointer-events: none; z-index: 200; border-left: 3px solid #ff4500; }
+    #subtitle.show { opacity: 1; }
+
+    #loading { position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center; background: #0a0605; color: #4fb4e8; font-size: 12px; letter-spacing: 4px; transition: opacity .6s ease; }
     #loading.hide { opacity: 0; pointer-events: none; }
 </style>
 </head>
@@ -100,6 +142,13 @@
 
 <div id="loading">ГЕНЕРАЦИЯ ПЛАНЕТЫ...</div>
 
+<!-- МЕНЮ -->
+<div id="mainMenu">
+    <div class="menu-title">MARS<br>TERRAFORMER</div>
+    <button class="menu-btn" id="btnStart">ИГРАТЬ</button>
+</div>
+
+<!-- HUD -->
 <div id="hud">
     <div class="panel" id="resPanel">
         <div class="panel-title">Ресурсы</div>
@@ -110,9 +159,7 @@
         <div class="res-line"><i style="background:#4fc3f7;color:#4fc3f7"></i>Вода <b id="ui-water">0</b></div>
         <div class="res-line"><i style="background:#ffc94a;color:#ffc94a"></i>Сплавы <b id="ui-alloys">0</b></div>
         <div class="energy-line"><span class="bolt">⚡</span>Энергия <b id="ui-energy">0 / 0</b></div>
-        <div class="battery-line" id="batteryLine"><span class="bat">🔋</span>Батареи <b id="ui-battery">0 / 0</b></div>
-        <div class="heat-line" id="heatLine"><span class="fire">🔥</span>Реактор <b id="ui-heat">0%</b></div>
-        <div class="eff-line" id="ui-eff"></div>
+        <div class="eff-line" id="ui-eff" style="font-size:9px;color:#6f8ba3;margin-top:4px;"></div>
     </div>
 
     <div class="panel" id="terraPanel">
@@ -120,41 +167,36 @@
         <div class="bar-row"><span>Температура</span><div class="track"><div class="fill temp" id="bar-temp"></div></div><b id="val-temp">0%</b></div>
         <div class="bar-row"><span>Атмосфера</span><div class="track"><div class="fill atmo" id="bar-atmo"></div></div><b id="val-atmo">0%</b></div>
         <div class="bar-row"><span>Вода</span><div class="track"><div class="fill water" id="bar-water"></div></div><b id="val-water">0%</b></div>
-        <div class="overall"><span>ОБЩИЙ ПРОГРЕСС</span><b id="val-total">0%</b></div>
+        <div class="overall"><span>ПРОГРЕСС</span><b id="val-total">0%</b></div>
     </div>
 
     <div class="panel" id="objPanel">
-        <div class="panel-title">Задача</div>
         <div id="objText">...</div>
     </div>
 
     <button id="btnCreative">РЕЖИМ КРЕАТИВА</button>
     <button id="btnMenu">МЕНЮ ПОСТРОЙКИ (B)</button>
 
-    <div id="weatherWarning">⚠ ПЫЛЬНАЯ БУРЯ — ВЫРАБОТКА СОЛНЕЧНЫХ ПАНЕЛЕЙ -80%</div>
-    <div id="reactorWarning">☢ КРИТИЧЕСКИЙ ПЕРЕГРЕВ РЕАКТОРА — БЕГИ!</div>
+    <div id="weatherWarning">⚠ ПЫЛЬНАЯ БУРЯ</div>
+    <div id="reactorWarning">☢ ПЕРЕГРЕВ РЕАКТОРА</div>
 
     <div id="hint">
-        <b>WASD</b> — полёт &nbsp;•&nbsp; <b>Space / Shift</b> — высота<br>
-        <b>ЛКМ</b> — камера &nbsp;•&nbsp; <b>Колесо</b> — зум<br>
-        <b>B</b> — меню постройки &nbsp;•&nbsp; <b>Esc</b> — отмена
+        <b>WASD</b> — полёт &nbsp;•&nbsp; <b>Space</b> — вверх<br>
+        <b>B</b> — постройки &nbsp;•&nbsp; <b>E</b> — диалог
     </div>
 </div>
 
-<!-- Меню постройки -->
 <div id="buildMenu">
     <div class="menu-content" id="menuGrid">
-        <div class="menu-title">ДОСТУПНЫЕ ПОСТРОЙКИ</div>
-        <!-- Сюда JS сгенерирует карточки -->
+        <div class="menu-title-b">ДОСТУПНЫЕ ПОСТРОЙКИ</div>
         <div class="close-btn"><button onclick="document.getElementById('buildMenu').classList.remove('show')">ЗАКРЫТЬ [B]</button></div>
     </div>
 </div>
 
-<div id="winScreen">
-    <h1>МАРС ЖИВ</h1>
-    <p>ТЕРРАФОРМИРОВАНИЕ ЗАВЕРШЕНО НА 100%</p>
-    <p id="winStats" style="color:#5f9f7d;font-size:12px;"></p>
-    <div class="sub">ПРИБЫЛИ КОРАБЛИ КОЛОНИСТОВ...</div>
+<div id="npcDialog">
+    <div id="npcName">Марсоход</div>
+    <div id="npcText">...</div>
+    <button id="npcBtn" onclick="document.getElementById('npcDialog').classList.remove('show')">ОК</button>
 </div>
 
 <div id="deathScreen">
@@ -162,9 +204,10 @@
     <p>МОТОР №1 — ОТКАЗ</p>
     <p>МОТОР №2 — ОТКАЗ</p>
     <p>ПАДЕНИЕ... СИГНАЛ ПОТЕРЯН</p>
-    <div class="sub">ПРИЧИНА: РАДИАЦИОННОЕ ЗАРАЖЕНИЕ</div>
     <button id="restartBtn">ПЕРЕЗАПУСК</button>
 </div>
+
+<div id="subtitle"></div>
 
 <script type="importmap">
 {
