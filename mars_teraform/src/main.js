@@ -13,7 +13,7 @@ import {
     initNodes, updateNodes, initCrates, updateCrates,
     initGhost, ghostRing, setGhostType, clearGhost, updateGhostPosition,
     tryPlace, updateBuildingsVisual, canAfford, payCost, removeBuilding,
-    spawnAlien, updateEnemies, updateProjectiles, breakBuilding
+    spawnAlien, updateEnemies, updateProjectiles
 } from './entities.js';
 
 /* ============ СЦЕНА ============ */
@@ -79,11 +79,47 @@ controls.rotateSpeed = 0.7;
 controls.enabled = false;
 refs.controls = controls;
 
+/* ============ ЛОКАЛЬНАЯ ФУНКЦИЯ РАЗРУШЕНИЯ ============ */
+function breakBuilding(b) {
+    if (!b || b._removed) return;
+    
+    // Если это реактор — ВЗРЫВ
+    if (b.type === 'nuclear') {
+        const pos = b.pos.clone();
+        state.planetContaminated = true;
+        state.terra.temp = Math.max(0, state.terra.temp - 30);
+        state.terra.atmo = Math.max(0, state.terra.atmo - 30);
+        state.terra.water = Math.max(0, state.terra.water - 30);
+        
+        for (let i = 0; i < 6; i++) spawnBurst(pos, 0xff2200, 60);
+        
+        state.contamination.push({ pos: pos.clone(), radius: 50 });
+        
+        // Сносим всё вокруг
+        const toRemove = new Set();
+        for (const ob of state.buildings) {
+            if (ob.pos.distanceTo(pos) < 60) toRemove.add(ob);
+        }
+        if (dronePos.distanceTo(pos) < 120) killDrone();
+        for (const ob of toRemove) removeBuilding(ob);
+        
+        state.reactor.heat = 0;
+        state.reactor.active = false;
+        state.reactor.overheatPhase = 'idle';
+        return;
+    }
+
+    // Обычное здание
+    spawnBurst(b.pos, 0xff4400, 15);
+    removeBuilding(b);
+}
+
 /* ============ ВВОД ============ */
 const keys = {};
 const menuEl = document.getElementById('buildMenu');
 const npcDialogEl = document.getElementById('npcDialog');
 const subtitleEl = document.getElementById('subtitle');
+const alienDialogEl = document.getElementById('alienDialog'); // Новый диалог
 
 function showSubtitle(text, duration) {
     if (!subtitleEl) return;
@@ -101,11 +137,13 @@ addEventListener('keydown', e => {
         clearGhost(); state.selected = null; 
         menuEl.classList.remove('show'); 
         npcDialogEl.classList.remove('show');
+        if(alienDialogEl) alienDialogEl.classList.remove('show');
     }
     if (e.code === 'KeyB') {
         menuEl.classList.toggle('show');
     }
     if (e.code === 'KeyE') {
+        // NPC
         let nearNPC = null;
         for (const npc of rovers) {
             if (dronePos.distanceTo(npc.mesh.position) < 15) {
@@ -156,7 +194,6 @@ function renderMenu() {
         const def = BUILDING_DEFS[type];
         const affordable = canAfford(def.cost);
         
-        // Форматируем стоимость полными словами
         const costStr = Object.entries(def.cost)
             .map(([k, v]) => `${v} ${RES_INFO[k].name}`)
             .join(' · ');
@@ -388,7 +425,7 @@ function updateEconomy(dt) {
                 const cooling = hasSteam * 15;
                 const heatGen = 25;
                 state.reactor.heat = clamp(state.reactor.heat + (heatGen - cooling) * dt, 0, 100);
-                reactorProd = 250;
+                reactorProd = 1000; // Реактор дает 1000
             } else {
                 state.reactor.heat = Math.min(100, state.reactor.heat + 25 * dt);
             }
@@ -416,7 +453,7 @@ function updateEconomy(dt) {
     }
     
     let capacity = 0;
-    for (const b of state.buildings) if (b.type === 'battery') capacity += 500;
+    for (const b of state.buildings) if (b.type === 'battery') capacity += 2000; // Батарея 2000
     state.batteries.capacity = capacity;
     
     const totalProd = prod + reactorProd + state.batteries.charge;
@@ -466,19 +503,77 @@ function updateEconomy(dt) {
     }
 }
 
-/* ============ ВОЛНЫ ВРАГОВ ============ */
+/* ============ ДИПЛОМАТИЯ И ВОЛНЫ ============ */
+let alienShipSpawned = false;
+
 function updateWaves(dt) {
     if (state.mode !== 'game') return;
-    state.waveTimer -= dt;
-    if (state.waveTimer <= 0) {
-        state.waveCount++;
-        state.waveTimer = 90 + Math.random() * 30;
-        const count = 2 + Math.floor(state.waveCount * 0.5);
-        for (let i = 0; i < count; i++) {
-            setTimeout(() => spawnAlien(scene, state.waveCount), i * 2000);
+    
+    // Если войны нет, раз в 60 секунд прилетает корабль-посол (только 1 раз)
+    if (!state.warActive && !alienShipSpawned && state.gameTime > 60) {
+        alienShipSpawned = true;
+        spawnAlienShip(scene);
+    }
+
+    // Если война идет, спавним врагов реже (раз в 3 минуты)
+    if (state.warActive) {
+        state.waveTimer -= dt;
+        if (state.waveTimer <= 0) {
+            state.waveCount++;
+            state.waveTimer = 180; 
+            const count = 3 + Math.floor(state.waveCount * 0.5);
+            for (let i = 0; i < count; i++) {
+                setTimeout(() => spawnAlien(scene, state.waveCount), i * 3000);
+            }
         }
     }
 }
+
+function spawnAlienShip(scene) {
+    const g = new THREE.Group();
+    const matBody = new THREE.MeshStandardMaterial({ color: 0x8888ff, roughness: 0.2, metalness: 0.8, emissive: 0x111133 });
+    
+    const hull = new THREE.Mesh(new THREE.SphereGeometry(5, 16, 12), matBody);
+    hull.scale.y = 0.5;
+    hull.castShadow = true; g.add(hull);
+    
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(2.5, 16, 12, 0, Math.PI*2, 0, Math.PI/2), new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.6 }));
+    dome.position.y = 2; g.add(dome);
+
+    // Позиция над дроном
+    const x = dronePos.x + 30;
+    const z = dronePos.z + 30;
+    g.position.set(x, terrainHeight(x, z) + 40, z);
+    scene.add(g);
+    
+    state.alienShip = g;
+    
+    // Показываем диалог
+    showSubtitle("Внимание! Обнаружен корабль пришельцев.", 3000);
+    
+    setTimeout(() => {
+        if (document.getElementById('alienDialog')) {
+            document.getElementById('alienDialog').classList.add('show');
+        }
+    }, 2000);
+}
+
+// Обработка кнопок в диалоге пришельцев
+document.getElementById('btnWar')?.addEventListener('click', () => {
+    document.getElementById('alienDialog').classList.remove('show');
+    state.warActive = true;
+    showSubtitle("Вы объявили войну! Пришельцы в ярости.", 3000);
+});
+
+document.getElementById('btnPeace')?.addEventListener('click', () => {
+    document.getElementById('alienDialog').classList.remove('show');
+    showSubtitle("Вы заключили мир. Пришельцы улетели.", 3000);
+    if (state.alienShip) {
+        scene.remove(state.alienShip);
+        state.alienShip = null;
+    }
+});
+
 
 /* ============ NPC (Марсоходы) ============ */
 const rovers = [];
@@ -491,14 +586,12 @@ function initNPCs() {
         const body = new THREE.Mesh(new THREE.BoxGeometry(4, 2, 6), matBody);
         body.position.y = 2; body.castShadow = true; g.add(body);
         
-        // Колеса
         for(let j=0; j<4; j++) {
             const w = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.5, 12), matWheel);
             w.rotation.z = Math.PI/2;
             w.position.set((j<2?1:-1)*2.2, 1, (j%2===0?2:-2));
             g.add(w);
         }
-        // Антенна
         const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 2, 8), matWheel);
         ant.position.set(0, 4, 0); g.add(ant);
         const dish = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 8), matBody);
@@ -549,7 +642,6 @@ function initSpaceScene() {
     spaceScene = new THREE.Scene();
     spaceCamera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 100000);
 
-    // Звезды
     const starGeo = new THREE.BufferGeometry();
     const starCount = 5000;
     const starPos = new Float32Array(starCount * 3);
@@ -562,7 +654,6 @@ function initSpaceScene() {
     const starField = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 3, transparent: true, opacity: 0.8 }));
     spaceScene.add(starField);
 
-    // Марс
     function createMarsTexture() {
         const canvas = document.createElement('canvas');
         canvas.width = 1024; canvas.height = 512;
@@ -580,7 +671,6 @@ function initSpaceScene() {
     marsPlanet.position.set(0, 0, -15000); 
     spaceScene.add(marsPlanet);
 
-    // Свет (подсветка сзади)
     const backLight = new THREE.DirectionalLight(0xffaa88, 3.0);
     backLight.position.set(0, 0, -20000);
     spaceScene.add(backLight);
@@ -622,10 +712,8 @@ function updateCinematic(dt) {
 
 /* ============ МЕСТО КРУШЕНИЯ ============ */
 function spawnCrashSite() {
-    // Группа для ракеты
     const r = new THREE.Group();
     
-    // Создаем ракету внутри группы (центр координат группы — это центр ракеты)
     const matWhite = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.4, metalness: 0.5 });
     const matBlack = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6 });
     
@@ -641,21 +729,16 @@ function spawnCrashSite() {
     eng.position.y = -8.5;
     r.add(eng);
 
-    // Втыкаем носом в землю
-    r.rotation.z = Math.PI / 1.5; // Наклон
-    r.rotation.x = 0.2; // Немного в бок
+    r.rotation.z = Math.PI / 1.5; 
+    r.rotation.x = 0.2; 
     
-    // Позиция (нос должен уйти в землю)
     const x = dronePos.x + 25;
     const z = dronePos.z + 15;
     const groundY = terrainHeight(x, z);
     
-    // Поднимаем центр так, чтобы нос (который на 10.5 выше центра) оказался в земле
-    // Нос смещен в сторону из-за поворота, так что высоту берем с запасом
     r.position.set(x, groundY + 6, z);
     scene.add(r);
 
-    // Лут (ящики) разбросан
     for (let i = 0; i < 12; i++) {
         const lootX = x + (Math.random() - 0.5) * 25;
         const lootZ = z + (Math.random() - 0.5) * 25;
