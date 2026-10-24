@@ -138,6 +138,17 @@
     #loading.hide { opacity: 0; pointer-events: none; }
 </style>
 </head>
+<!-- ДИАЛОГ С ПРИШЕЛЬЦАМИ -->
+<div id="alienDialog" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 500px; background: rgba(12,22,34,.95); border: 2px solid #ff00ff; border-radius: 12px; padding: 24px; display: none; pointer-events: auto; z-index: 100; box-shadow: 0 0 50px rgba(255,0,255,0.5); text-align: center;">
+    <h2 style="color: #ff00ff; margin-bottom: 10px;">Пришельцы на связи</h2>
+    <p style="color: #fff; font-size: 14px; margin-bottom: 20px;">
+        "Мы наблюдали за тобой, дрон. Ты уничтожаешь нашу планету. Выбирай: мы объявляем войну, или ты оставишь нас в покое?"
+    </p>
+    <div style="display: flex; gap: 10px; justify-content: center;">
+        <button id="btnWar" style="padding: 10px 20px; background: #ff5a5a; border: none; border-radius: 4px; color: #fff; font-weight: bold; cursor: pointer;">ОБЪЯВИТЬ ВОЙНУ</button>
+        <button id="btnPeace" style="padding: 10px 20px; background: #38bdf8; border: none; border-radius: 4px; color: #000; font-weight: bold; cursor: pointer;">ЗАКЛЮЧИТЬ МИР</button>
+    </div>
+</div>
 <body>
 
 <div id="loading">ГЕНЕРАЦИЯ ПЛАНЕТЫ...</div>
