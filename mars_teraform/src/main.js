@@ -83,7 +83,6 @@ refs.controls = controls;
 function breakBuilding(b) {
     if (!b || b._removed) return;
     
-    // Если это реактор — ВЗРЫВ
     if (b.type === 'nuclear') {
         const pos = b.pos.clone();
         state.planetContaminated = true;
@@ -95,7 +94,6 @@ function breakBuilding(b) {
         
         state.contamination.push({ pos: pos.clone(), radius: 50 });
         
-        // Сносим всё вокруг
         const toRemove = new Set();
         for (const ob of state.buildings) {
             if (ob.pos.distanceTo(pos) < 60) toRemove.add(ob);
@@ -109,7 +107,6 @@ function breakBuilding(b) {
         return;
     }
 
-    // Обычное здание
     spawnBurst(b.pos, 0xff4400, 15);
     removeBuilding(b);
 }
@@ -119,7 +116,7 @@ const keys = {};
 const menuEl = document.getElementById('buildMenu');
 const npcDialogEl = document.getElementById('npcDialog');
 const subtitleEl = document.getElementById('subtitle');
-const alienDialogEl = document.getElementById('alienDialog'); // Новый диалог
+const alienDialogEl = document.getElementById('alienDialog');
 
 function showSubtitle(text, duration) {
     if (!subtitleEl) return;
@@ -143,7 +140,6 @@ addEventListener('keydown', e => {
         menuEl.classList.toggle('show');
     }
     if (e.code === 'KeyE') {
-        // NPC
         let nearNPC = null;
         for (const npc of rovers) {
             if (dronePos.distanceTo(npc.mesh.position) < 15) {
@@ -425,7 +421,7 @@ function updateEconomy(dt) {
                 const cooling = hasSteam * 15;
                 const heatGen = 25;
                 state.reactor.heat = clamp(state.reactor.heat + (heatGen - cooling) * dt, 0, 100);
-                reactorProd = 1000; // Реактор дает 1000
+                reactorProd = 1000; 
             } else {
                 state.reactor.heat = Math.min(100, state.reactor.heat + 25 * dt);
             }
@@ -453,7 +449,7 @@ function updateEconomy(dt) {
     }
     
     let capacity = 0;
-    for (const b of state.buildings) if (b.type === 'battery') capacity += 2000; // Батарея 2000
+    for (const b of state.buildings) if (b.type === 'battery') capacity += 2000; 
     state.batteries.capacity = capacity;
     
     const totalProd = prod + reactorProd + state.batteries.charge;
@@ -509,13 +505,11 @@ let alienShipSpawned = false;
 function updateWaves(dt) {
     if (state.mode !== 'game') return;
     
-    // Если войны нет, раз в 60 секунд прилетает корабль-посол (только 1 раз)
     if (!state.warActive && !alienShipSpawned && state.gameTime > 60) {
         alienShipSpawned = true;
         spawnAlienShip(scene);
     }
 
-    // Если война идет, спавним врагов реже (раз в 3 минуты)
     if (state.warActive) {
         state.waveTimer -= dt;
         if (state.waveTimer <= 0) {
@@ -540,7 +534,6 @@ function spawnAlienShip(scene) {
     const dome = new THREE.Mesh(new THREE.SphereGeometry(2.5, 16, 12, 0, Math.PI*2, 0, Math.PI/2), new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.6 }));
     dome.position.y = 2; g.add(dome);
 
-    // Позиция над дроном
     const x = dronePos.x + 30;
     const z = dronePos.z + 30;
     g.position.set(x, terrainHeight(x, z) + 40, z);
@@ -548,7 +541,6 @@ function spawnAlienShip(scene) {
     
     state.alienShip = g;
     
-    // Показываем диалог
     showSubtitle("Внимание! Обнаружен корабль пришельцев.", 3000);
     
     setTimeout(() => {
@@ -558,7 +550,6 @@ function spawnAlienShip(scene) {
     }, 2000);
 }
 
-// Обработка кнопок в диалоге пришельцев
 document.getElementById('btnWar')?.addEventListener('click', () => {
     document.getElementById('alienDialog').classList.remove('show');
     state.warActive = true;
